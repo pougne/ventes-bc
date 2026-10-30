@@ -1,0 +1,23 @@
+{
+ "v": 1,
+ "tuiles": [
+  {
+   "insee": "92051",
+   "nom": "Neuilly-sur-Seine",
+   "court": "Neuilly",
+   "z": "neuilly",
+   "bbox": [
+    2.2457,
+    48.8741,
+    2.2845,
+    48.8984
+   ],
+   "url": "tuiles/92051.json",
+   "n": 10980,
+   "octets": 803861,
+   "octets_gzip": 241648,
+   "genere_le": "30/10/2026",
+   "v": "202610301655"
+  }
+ ]
+}

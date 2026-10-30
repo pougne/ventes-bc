@@ -79,12 +79,12 @@ td{padding:3px;border-bottom:1px solid #eee}.num{text-align:right;white-space:no
 <div class="pills"><label class="pill"><input type="checkbox" class="ft" value="M" checked>Maisons</label><label class="pill"><input type="checkbox" class="ft" value="A" checked>Appartements</label></div>
 <h2>Zone</h2>
 <div class="pills">
-<label class="pill" title="Tracé Eric + bande Flachat / mairie"><input type="checkbox" class="fz" value="bac" checked><span class="sw" style="background:#7c3aed"></span>Quartier Bac</label>
-<label class="pill" title="Tracé Eric"><input type="checkbox" class="fz" value="ouest" checked><span class="sw" style="background:#15803d"></span>Ouest mairie</label>
-<label class="pill"><input type="checkbox" class="fz" value="bc" checked><span class="sw" style="background:#374151"></span>Reste de BC</label>
-<label class="pill"><input type="checkbox" class="fz" value="frange" checked><span class="sw" style="background:#9ca3af"></span>BC nord / Agnettes</label>
-</div>
-<div class="sub" style="margin-top:4px">Quartier Bac = tracé Eric + bande Flachat / mairie ; Ouest mairie = tracé Eric.</div>
+<label class="pill" title="Tracé Eric + bande Flachat / mairie"><input type="checkbox" class="fz base" value="bac" checked><span class="sw" style="background:#7c3aed"></span>Quartier Bac</label>
+<label class="pill" title="Tracé Eric"><input type="checkbox" class="fz base" value="ouest" checked><span class="sw" style="background:#15803d"></span>Ouest mairie</label>
+<label class="pill"><input type="checkbox" class="fz base" value="bc" checked><span class="sw" style="background:#374151"></span>Reste de BC</label>
+<label class="pill"><input type="checkbox" class="fz base" value="frange" checked><span class="sw" style="background:#9ca3af"></span>BC nord / Agnettes</label>
+<span id="fzt"></span></div>
+<div class="sub" style="margin-top:4px">Quartier Bac = tracé Eric + bande Flachat / mairie ; Ouest mairie = tracé Eric. Autres communes (Neuilly…) : contour officiel, ventes chargées à la demande quand la carte s’en approche (<span id="tst">aucune chargée</span>).</div>
 <h2>Couleur des points</h2>
 <div class="pills"><label class="pill"><input type="radio" name="cm" value="rel" checked>vs médiane de zone</label><label class="pill"><input type="radio" name="cm" value="abs">€/m² absolu</label></div>
 <label class="tg"><input type="checkbox" id="eur"><span><b>Prix en € <span class="yr">2026</span></b> : ramène chaque €/m² au niveau de prix actuel (popup, liste, médianes)</span></label>
@@ -122,6 +122,7 @@ td{padding:3px;border-bottom:1px solid #eee}.num{text-align:right;white-space:no
 <script src="ventes.js"></script>
 <script>
 const V = window.VENTES, F = V.features, M = V.meta;
+const P = []; // toutes les ventes chargées (jeu de base ventes.js + tuiles communes), objets « properties »
 const $ = id => document.getElementById(id);
 const fmt = n => n == null ? "n.d." : Math.round(n).toLocaleString("fr-FR");
 const ZN = {bac: "Quartier Bac", ouest: "Ouest mairie BC", bc: "Reste de Bois-Colombes", frange: "BC nord / frange Agnettes"};
@@ -144,11 +145,13 @@ document.getElementById("bm").onclick = e => {
   document.querySelectorAll("#bm button").forEach(x => x.classList.toggle("on", x === b));
 };
 const ZS = {"Quartier Bac": "#7c3aed", "Ouest mairie BC": "#15803d", "Frange Agnettes / BC nord": "#6b7280", "Reste de Bois-Colombes": "#374151"};
+const ZTC = {neuilly: "#b45309"}; // couleur des zones des tuiles communes
 for (const [n, g] of Object.entries(V.zones)) L.geoJSON(g, {interactive: false, style: {color: ZS[n] || "#333", weight: n.startsWith("Reste") ? 2 : 2.5, opacity: .85, fill: false, dashArray: n.startsWith("Frange") ? "6 4" : null}}).addTo(map);
 // palette douce et lisible (bleu = bas / sous la médiane, jaune = moyen / autour, rouge = haut / au-dessus)
 const PAL = [[44,123,182],[125,180,213],[240,205,110],[236,135,92],[196,43,58]];
 const ramp = x => { x = Math.max(0, Math.min(1, x)); const i = Math.min(3, Math.floor(x * 4)), f = x * 4 - i; return `rgb(${PAL[i].map((v, k) => Math.round(v + (PAL[i + 1][k] - v) * f))})`; };
-function col(p, t) { const [a, b] = t === "M" ? [6000, 11000] : [4500, 8000]; return ramp((p - a) / (b - a)); }
+const ECH = {base: {M: [6000, 11000], A: [4500, 8000]}, "92051": {M: [10000, 22000], A: [8000, 14000]}};
+function col(p, t, g) { const [a, b] = (ECH[g] || ECH.base)[t]; return ramp((p - a) / (b - a)); }
 const colRel = r => ramp((r + .25) / .5); // -25 % et moins -> bleu, +25 % et plus -> rouge
 const sheetH = () => { const s = $("sheet"); return s ? s.offsetHeight : 60; };
 // options communes des popups : largeur adaptée au téléphone, recentrage en laissant la place aux boutons, au tiroir et à la barre Safari
@@ -156,7 +159,7 @@ const PO = () => ({maxWidth: Math.min(360, window.innerWidth - 56), minWidth: Ma
   autoPanPaddingTopLeft: [12, window.innerWidth <= 800 ? 64 : 64], autoPanPaddingBottomRight: [12, (window.innerWidth <= 800 ? sheetH() : 30) + 12]});
 const wrap = h => h + `<div class="pop-f"><button class="pop-x" onclick="map.closePopup()">× Fermer</button></div>`;
 const dfr = d => d.split("-").reverse().join("/");
-const DA = V.dpeA || {};
+const DA = Object.assign({}, V.dpeA || {});
 const pas = (e, sm, ax) => e ? `<span class="dpe dpe-${e}${sm ? " sm" : ""}${ax ? " ax" : ""}">${e}</span>` : "";
 const DCOL = {A: "#009c6d", B: "#52b153", C: "#a5cc74", D: "#f4e70f", E: "#f0b40f", F: "#eb8235", G: "#d7221f"};
 function dpeLigne(p) {
@@ -173,23 +176,29 @@ function dpeAdr(adrs) {
   return r.length ? `<div style="margin-top:6px">DPE à l’adresse (ADEME, tous logements) :</div>${r.join("")}` : "";
 }
 const BYQ = {}, BYA = {};
-F.forEach((f, i) => { const p = f.properties; p.i = i; p.ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]]; const q = p.q || ("pt" + i);
-  p.q = q; (BYQ[q] = BYQ[q] || []).push(p); (BYA[p.a] = BYA[p.a] || new Set()).add(q); });
-Object.values(BYQ).forEach(a => a.sort((x, y) => x.d < y.d ? 1 : -1));
+function ajouter(props) { // props : objets vente avec ll = [lat, lon] ; q vide = parcelle inconnue
+  for (const p of props) { p.i = P.length; P.push(p); const q = p.q || ("pt" + p.i); p.q = q; (BYQ[q] = BYQ[q] || []).push(p); (BYA[p.a] = BYA[p.a] || new Set()).add(q); }
+  const qs = new Set(props.map(p => p.q)); for (const q of qs) BYQ[q].sort((x, y) => x.d < y.d ? 1 : -1);
+}
+ajouter(F.map(f => { const p = f.properties; p.g = "base"; p.ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]]; return p; }));
 function med(a) { if (!a.length) return null; a = a.slice().sort((x, y) => x - y); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; }
 function qt(a, q) { if (!a.length) return null; a = a.slice().sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.max(0, Math.round(q * (a.length - 1))))]; }
 // ---- indice annuel pour les « € d'aujourd'hui » : médiane €/m² par type et par an ; par zone si au moins 30 ventes chaque année, sinon tout le périmètre
-const GI = {M: {}, A: {}}, ZI = {};
-(() => { const b = {}; for (const f of F) { const p = f.properties; for (const k of [`*|${p.t}|${p.y}`, `${p.z}|${p.t}|${p.y}`]) (b[k] = b[k] || []).push(p.p); }
-  for (const t of "MA") for (let y = YA; y <= YR; y++) GI[t][y] = med(b[`*|${t}|${y}`] || []);
-  for (const z in ZN) for (const t of "MA") { let okz = true; const s = {}; for (let y = YA; y <= YR; y++) { const a = b[`${z}|${t}|${y}`] || []; if (a.length < 30) okz = false; s[y] = med(a); } if (okz) ZI[`${z}|${t}`] = s; } })();
-for (const f of F) { const p = f.properties, s = ZI[`${p.z}|${p.t}`] || GI[p.t], k = s[YR] && s[p.y] ? s[YR] / s[p.y] : 1; p.pa = Math.round(p.p * k); p.va = Math.round(p.v * k / 1000) * 1000; }
+// GI par groupe (jeu de base BC / chaque tuile commune) pour ne pas mélanger les niveaux de prix
+let GI = {}, ZI = {};
+function indices() { const b = {}; GI = {}; ZI = {};
+  for (const p of P) for (const k of [`*${p.g}|${p.t}|${p.y}`, `${p.z}|${p.t}|${p.y}`]) (b[k] = b[k] || []).push(p.p);
+  for (const g of new Set(P.map(p => p.g))) { GI[g] = {M: {}, A: {}}; for (const t of "MA") for (let y = YA; y <= YR; y++) GI[g][t][y] = med(b[`*${g}|${t}|${y}`] || []); }
+  for (const z in ZN) for (const t of "MA") { let okz = true; const s = {}; for (let y = YA; y <= YR; y++) { const a = b[`${z}|${t}|${y}`] || []; if (a.length < 30) okz = false; s[y] = med(a); } if (okz) ZI[`${z}|${t}`] = s; }
+  for (const p of P) { const s = ZI[`${p.z}|${p.t}`] || GI[p.g][p.t], k = s[YR] && s[p.y] ? s[YR] / s[p.y] : 1; p.pa = Math.round(p.p * k); p.va = Math.round(p.v * k / 1000) * 1000; }
+}
+indices();
 let Y0 = 2021, Y1 = 2026, EUR = false, CM = "rel";
 const inW = p => p.y >= Y0 && p.y <= Y1;
 const val = p => EUR ? p.pa : p.p; // €/m² affiché : nominal ou ramené en € de l'année de référence
 const eurL = () => EUR ? ` en € ${YR}` : "";
 let MZ = {}, MT = {}; // médianes de zone (même type, fenêtre, en € de référence) pour la couleur relative
-const relR = p => { const m = MZ[`${p.z}|${p.t}`] ?? MT[p.t]; return m ? p.pa / m - 1 : null; };
+const relR = p => { const m = MZ[`${p.z}|${p.t}`] ?? MT[`${p.g}|${p.t}`]; return m ? p.pa / m - 1 : null; };
 const pct = r => r == null ? "" : `${r >= 0 ? "+" : "−"}${Math.abs(Math.round(r * 100))} %`;
 function liens(q, ll, a) {
   const L1 = [];
@@ -225,11 +234,12 @@ const mk = []; // un marqueur par parcelle, reconstruit à chaque filtrage
 const openParc = (q, ll, note) => L.popup(PO()).setLatLng(ll || BYQ[q][0].ll).setContent(popupParc(q, note)).openOn(map);
 // parcelles vendues : cliquables et teintées par €/m² au zoom fort
 const parcL = L.layerGroup(), PL = {};
-for (const [q, g] of Object.entries(V.parcelles || {})) {
-  if (!BYQ[q]) continue;
+function ajouterParcelles(obj) { for (const [q, g] of Object.entries(obj)) {
+  if (!BYQ[q] || PL[q]) continue;
   PL[q] = L.geoJSON({type: g.t, coordinates: g.c}, {style: {color: "#6b7280", weight: .7, fillColor: "#999", fillOpacity: .04}, bubblingMouseEvents: false})
     .on("click", e => { L.DomEvent.stopPropagation(e); openParc(q, e.latlng); }).addTo(parcL);
-}
+} }
+ajouterParcelles(V.parcelles || {});
 const syncParc = () => map.getZoom() >= 17 ? parcL.addTo(map) : map.removeLayer(parcL);
 map.on("zoomend", syncParc);
 // clic ailleurs : parcelle vendue la plus proche (et fermeture du panneau filtres sur mobile)
@@ -260,9 +270,11 @@ function apply() {
   }
   // médianes de zone (en € de référence pour comparer des années différentes)
   MZ = {}; MT = {}; const bz = {};
-  for (const p of cur) { (bz[`${p.z}|${p.t}`] = bz[`${p.z}|${p.t}`] || []).push(p.pa); (bz[p.t] = bz[p.t] || []).push(p.pa); }
-  for (const k in bz) { if (bz[k].length >= NMIN) (k.length === 1 ? MT : MZ)[k] = med(bz[k]); }
-  const colOf = ref => { if (cd) return DCOL[dE(ref)] || "#bbb"; if (CM === "rel") { const r = relR(ref); if (r != null) return colRel(r); } return col(val(ref), ref.t); };
+  const bt = {};
+  for (const p of cur) { (bz[`${p.z}|${p.t}`] = bz[`${p.z}|${p.t}`] || []).push(p.pa); (bt[`${p.g}|${p.t}`] = bt[`${p.g}|${p.t}`] || []).push(p.pa); }
+  for (const k in bz) if (bz[k].length >= NMIN) MZ[k] = med(bz[k]);
+  for (const k in bt) if (bt[k].length >= NMIN) MT[k] = med(bt[k]);
+  const colOf = ref => { if (cd) return DCOL[dE(ref)] || "#bbb"; if (CM === "rel") { const r = relR(ref); if (r != null) return colRel(r); } return col(val(ref), ref.t, ref.g); };
   mk.length = 0; const RQ = {};
   for (const [q, ref, old] of R) {
     const c = colOf(ref); RQ[q] = [c, old];
@@ -285,12 +297,12 @@ function apply() {
 function legend(cd) {
   const g = cd ? `Couleur = DPE ADEME (gris = sans DPE).`
     : CM === "rel" ? `Couleur = écart à la médiane €/m² de la zone, même type, fenêtre ${Y0}–${Y1} : <i style="background:${colRel(-.25)}"></i>sous (−25 % et moins) <i style="background:${colRel(0)}"></i>autour <i style="background:${colRel(.25)}"></i>au-dessus (+25 % et plus). Comparaison faite en € ${YR} ; zone avec moins de ${NMIN} ventes : médiane de tout le périmètre.`
-    : `Couleur €/m²${eurL()} (maisons 6 à 11 k€, appartements 4,5 à 8 k€) : <i style="background:${ramp(0)}"></i>bas <i style="background:${ramp(.5)}"></i>moyen <i style="background:${ramp(1)}"></i>haut.`;
+    : `Couleur €/m²${eurL()} (maisons 6 à 11 k€, appartements 4,5 à 8 k€${TU.ok["92051"] ? " ; Neuilly : maisons 10 à 22 k€, appartements 8 à 14 k€" : ""}) : <i style="background:${ramp(0)}"></i>bas <i style="background:${ramp(.5)}"></i>moyen <i style="background:${ramp(1)}"></i>haut.`;
   $("leg").innerHTML = g + ` Gros point cerclé de foncé = maison, petit point = appartement. Point pâle à bord gris pointillé = dernière vente hors fenêtre (remontée). Un point = une parcelle ; clic = tout son historique. Au zoom 17+, les parcelles vendues sont teintées et cliquables ; un clic ailleurs ouvre la parcelle vendue la plus proche (40 m max).<br><b>€ ${YR}</b> : €/m² × (médiane annuelle ${YR} / médiane de l’année de vente), même type ; par zone si au moins 30 ventes chaque année, sinon tout le périmètre. ${YR} = premier semestre seulement.`;
 }
 // ---- fiche zone : courbe des médianes annuelles (SVG maison, sans bibliothèque)
 function fiche(Z, T) {
-  const b = {}; for (const f of F) { const p = f.properties; if (!OK(p)) continue; (b[`${p.z}|${p.t}|${p.y}`] = b[`${p.z}|${p.t}|${p.y}`] || []).push(p.p); }
+  const b = {}; for (const p of P) { if (!OK(p)) continue; (b[`${p.z}|${p.t}|${p.y}`] = b[`${p.z}|${p.t}|${p.y}`] || []).push(p.p); }
   const W = 300, H = 92, pl = 4, pr = 44, pt = 6, pb = 24, n = YR - YA, X = y => pl + (y - YA) / n * (W - pl - pr);
   const TC = {M: "#1f2a37", A: "#2c7bb6"};
   $("fiche").innerHTML = Object.keys(ZN).filter(z => Z.includes(z)).map(z => {
@@ -332,7 +344,7 @@ function refreshView() {
   const key = SORT === "p" ? val : SORT === "x" ? (p => p._x) : SORT === "dpe" ? (p => DE(p) || "Z") : (p => p.d);
   LIST = src.slice().sort((a, b) => { const x = key(a), y = key(b); return (x > y ? 1 : x < y ? -1 : 0) * SDIR; });
   $("list").innerHTML = LIST.slice(0, 300).map((p, i) => { const r = relR(p);
-    return `<div class="it" data-i="${i}"><i style="background:${$("cdpe").checked ? (DCOL[DE(p)] || "#bbb") : CM === "rel" && r != null ? colRel(r) : col(val(p), p.t)}"></i>
+    return `<div class="it" data-i="${i}"><i style="background:${$("cdpe").checked ? (DCOL[DE(p)] || "#bbb") : CM === "rel" && r != null ? colRel(r) : col(val(p), p.t, p.g)}"></i>
       <div><b>${fmt(val(p))} €/m²</b>${EUR ? ` <span class="approx">(${fmt(p.p)} nominal)</span>` : p.y < YR ? ` <span class="approx">≈${fmt(p.pa)} en € ${YR}</span>` : ""} ${pas(p.dpe, 1, p.dpe_ax)}</div>
       <div class="r">${fmt(p.v)} €</div>
       <div class="s">${dfr(p.d)} · ${p.t === "M" ? "Maison" : "Appart"} ${p.s} m² · ${p.a.replace(/ 92\d{3}.*/, "")}</div>
@@ -375,18 +387,20 @@ function csv(rows, name) { const h = ["parcelle","date","annee","zone","adresse"
 $("csv").onclick = () => csv(cur, "ventes_filtrees.csv");
 $("csv2").onclick = () => csv(LIST, BAL.on ? `ventes_rayon_${BAL.r}m.csv` : "ventes_zone_visible.csv");
 // ---- lien partageable (état dans le #)
-let hashOn = false;
+let hashOn = false; const ZOFF = new Set(); // zones de tuiles décochées (état gardé même avant chargement)
 function writeHash() { if (!hashOn) return; const c = map.getCenter(), g = (s) => [...document.querySelectorAll(s)].map(e => e.value);
-  const h = {y0: Y0, y1: Y1, t: g(".ft:checked").join(""), z: g(".fz:checked").join(","), lat: c.lat.toFixed(5), lng: c.lng.toFixed(5), zoom: map.getZoom()};
+  const h = {y0: Y0, y1: Y1, t: g(".ft:checked").join(""), z: g(".fz.base:checked").join(","), lat: c.lat.toFixed(5), lng: c.lng.toFixed(5), zoom: map.getZoom()};
   for (const k of ["smin", "pmin", "pmax"]) if (+$(k).value) h[k] = $(k).value;
   if (!$("rem").checked) h.rem = 0; if (!$("vefa").checked) h.vefa = 0; if ($("heat").checked) h.heat = 1; if (!$("clu").checked) h.clu = 0;
   if (CM !== "rel") h.c = CM; if (EUR) h.eur = 1; if ($("cdpe").checked) h.cd = 1; if ($("dstrict").checked) h.ds = 1;
   const dp = g(".fdpe:checked"); if (dp.length !== 8) h.dpe = dp.join(""); if (BAL.on) h.b = BAL.r;
+  const zx = [...ZOFF]; if (zx.length) h.zx = zx.join(",");
   history.replaceState(null, "", "#" + new URLSearchParams(h).toString()); }
 function readHash() { const h = new URLSearchParams(location.hash.slice(1)); if (![...h.keys()].length) return null;
   const set = (id, k) => { if (h.has(k)) $(id).value = h.get(k); }; set("y0", "y0"); set("y1", "y1"); set("smin", "smin"); set("pmin", "pmin"); set("pmax", "pmax");
   if (h.has("t")) document.querySelectorAll(".ft").forEach(e => e.checked = h.get("t").includes(e.value));
-  if (h.has("z")) { const z = h.get("z").split(","); document.querySelectorAll(".fz").forEach(e => e.checked = z.includes(e.value)); }
+  if (h.has("z")) { const z = h.get("z").split(","); document.querySelectorAll(".fz.base").forEach(e => e.checked = z.includes(e.value)); }
+  if (h.has("zx")) h.get("zx").split(",").filter(Boolean).forEach(z => ZOFF.add(z));
   if (h.has("dpe")) document.querySelectorAll(".fdpe").forEach(e => e.checked = h.get("dpe").includes(e.value));
   const b = (id, k, def) => { if (h.has(k)) $(id).checked = h.get(k) === "1"; else $(id).checked = def; };
   b("rem", "rem", true); b("vefa", "vefa", true); b("heat", "heat", false); b("clu", "clu", true); b("eur", "eur", false); b("cdpe", "cd", false); b("dstrict", "ds", false);
@@ -395,13 +409,39 @@ function readHash() { const h = new URLSearchParams(location.hash.slice(1)); if 
   return h.has("b") ? +h.get("b") : null; }
 $("share").onclick = async () => { writeHash(); const u = location.href;
   try { await navigator.clipboard.writeText(u); toast("Lien copié"); } catch (e) { prompt("Lien à copier :", u); } };
+// ---- tuiles communes : ventes d'autres communes (fichier par commune, format colonnaire), chargées quand la carte s'en approche
+const TU = {reg: null, ok: {}, enCours: {}};
+function decoder(T) { const c = T.c, [X0, Y0c] = T.o, n = c.d.length, out = [], dt = x => { x = String(x).padStart(6, "0"); return `20${x.slice(0, 2)}-${x.slice(2, 4)}-${x.slice(4, 6)}`; };
+  for (let i = 0; i < n; i++) { const p = {q: c.q[i] >= 0 ? T.Q[c.q[i]] : "", d: dt(c.d[i]), z: T.z, c: T.court, a: T.A[c.a[i]], ax: +c.ax[i], t: c.t[i], s: c.s[i], v: c.v[i],
+      f: +c.f[i], src: c.src[i], g: T.insee, ll: [Y0c + c.y[i] / 1e6, X0 + c.x[i] / 1e6]};
+    p.y = +p.d.slice(0, 4); p.p = Math.round(p.v / p.s);
+    if (c.dpe_n[i]) p.dpe_n = c.dpe_n[i];
+    if (c.dpe[i] !== "-") { p.dpe = c.dpe[i]; p.dpe_d = dt(c.dpe_d[i]); p.dpe_ax = +c.dpe_ax[i]; if (c.dpe_g[i] !== "-") p.dpe_g = c.dpe_g[i]; if (c.dpe_s[i]) p.dpe_s = c.dpe_s[i]; }
+    out.push(p); }
+  const ring = r => { const o = []; let x = 0, y = 0; for (let k = 0; k < r.length; k += 2) { x = k ? x + r[k] : r[k]; y = k ? y + r[k + 1] : r[k + 1]; o.push([X0 + x / 1e6, Y0c + y / 1e6]); } if (o.length) o.push(o[0]); return o; };
+  const parc = {}; T.P.forEach((g, i) => { if (!g) return; parc[T.Q[i]] = g[0] === "P" ? {t: "Polygon", c: g.slice(1).map(ring)} : {t: "MultiPolygon", c: g.slice(1).map(pl => pl.map(ring))}; });
+  const da = {}; for (const k in T.dpeA) da[T.A[+k]] = T.dpeA[k];
+  return {props: out, parc, da}; }
+function zonePill(T) { ZN[T.z] = T.nom; const l = document.createElement("label"); l.className = "pill";
+  l.innerHTML = `<input type="checkbox" class="fz tz" value="${T.z}"${ZOFF.has(T.z) ? "" : " checked"}><span class="sw" style="background:${ZTC[T.z] || "#b45309"}"></span>${T.court}`;
+  $("fzt").appendChild(l); l.querySelector("input").addEventListener("change", e => { e.target.checked ? ZOFF.delete(T.z) : ZOFF.add(T.z); apply(); }); }
+async function chargerTuile(t) { if (TU.ok[t.insee] || TU.enCours[t.insee]) return; TU.enCours[t.insee] = true; toast(`Chargement des ventes ${t.court}…`);
+  try { const r = await fetch(`${t.url}?v=${t.v}`); if (!r.ok) throw new Error(r.status); const T = await r.json(), x = decoder(T);
+    zonePill(T); L.geoJSON(T.contour, {interactive: false, style: {color: ZTC[T.z] || "#b45309", weight: 2.5, opacity: .85, fill: false, dashArray: "8 5"}}).addTo(map);
+    ajouter(x.props); Object.assign(DA, x.da); indices(); ajouterParcelles(x.parc); TU.ok[t.insee] = T.meta;
+    $("tst").textContent = Object.entries(TU.ok).map(([k, m]) => `${TU.reg.tuiles.find(u => u.insee === k).court} ${fmt(m.n)} ventes`).join(", ");
+    apply(); toast(`${t.court} : ${fmt(T.meta.n)} ventes chargées`);
+  } catch (e) { toast(`${t.court} : chargement impossible (${e.message})`); } finally { TU.enCours[t.insee] = false; } }
+function tuilesVisibles() { if (!TU.reg || map.getZoom() < 13) return; const b = map.getBounds(); // seulement si la commune est à l’écran (zoom 13+), pas de préchargement
+  for (const t of TU.reg.tuiles) if (!TU.ok[t.insee] && b.intersects(L.latLngBounds([t.bbox[1], t.bbox[0]], [t.bbox[3], t.bbox[2]]))) chargerTuile(t); }
+async function tuiles() { try { const r = await fetch("tuiles/index.json", {cache: "no-cache"}); if (r.ok) TU.reg = await r.json(); } catch (e) {} tuilesVisibles(); map.on("moveend", tuilesVisibles); }
 // ---- démarrage
 $("tog").onclick = () => document.body.classList.toggle("open");
 $("sidex").onclick = () => document.body.classList.remove("open");
 document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.remove("open"); });
 const b0 = readHash();
 document.querySelectorAll("#side input").forEach(e => e.addEventListener(e.type === "range" || e.type === "number" ? "input" : "change", apply));
-hashOn = true; apply(); syncParc();
+hashOn = true; apply(); syncParc(); tuiles();
 if (b0) { BAL.r = [100, 250, 500].includes(b0) ? b0 : 250; $("rad").querySelectorAll("button").forEach(x => x.classList.toggle("on", +x.dataset.r === BAL.r)); balade(true); }
 window.addEventListener("resize", setSh);
 if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});

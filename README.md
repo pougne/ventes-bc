@@ -1,4 +1,4 @@
-# Ventes DVF nettoyées : Bois-Colombes, quartier Bac, bande Flachat
+# Ventes DVF nettoyées : Bois-Colombes, quartier Bac, bande Flachat (+ Neuilly à la demande)
 
 Carte statique (Leaflet) des ventes DVF 2014 à juin 2026, publiée sur GitHub Pages : https://pougne.github.io/ventes-bc/
 
@@ -8,6 +8,14 @@ Carte statique (Leaflet) des ventes DVF 2014 à juin 2026, publiée sur GitHub P
 - `annonces.js` + `annonces_calque.js` : calque facultatif des annonces en cours (localisation confirmée ou probable seulement), produit par `construire_annonces.py`.
 - `manifest.webmanifest`, `sw.js`, `icon-192.png`, `icon-512.png` : application installable (PWA) et hors ligne.
 - `ventes.csv`, `ventes.geojson`, `bilan.json` : exports.
+- `tuiles/index.json` + `tuiles/<insee>.json` : autres communes, un fichier par commune (code INSEE), chargé seulement quand la carte affiche la commune (zoom 13 et plus). Pour l'instant : Neuilly-sur-Seine (92051). Produit par `telecharger_commune.py <insee>` puis `construire_commune.py <insee>`.
+
+## Tuiles communes (format)
+- Registre `tuiles/index.json` : pour chaque commune, bbox, URL, nombre de ventes, tailles brute et gzip, version (cache-busting).
+- `tuiles/<insee>.json` : format colonnaire (une liste par champ au lieu d'un objet par vente), adresses et parcelles en dictionnaires, positions et contours de parcelles en entiers (1e-6 °, delta-encodés), dates AAMMJJ ; €/m² et année recalculés côté client. Environ 70 octets par vente au lieu de 350 en GeoJSON.
+- Zone = contour officiel de la commune (geo.api.gouv.fr), pas de tracé à la main. Bornes €/m² propres à la commune (Neuilly : 4 000 à 20 000, maison de 100 m² et plus jusqu'à 35 000).
+- « € 2026 » et couleur relative : indices calculés par groupe (BC d'un côté, chaque commune de l'autre), BC n'est pas modifié par le chargement de Neuilly.
+- Lien partageable : zones des tuiles décochées dans `zx=` (une commune pas encore chargée reste visible par défaut).
 
 ## Fonctions
 - Couleur des points : écart à la médiane €/m² de la zone (même type, fenêtre d’années, comparaison en € de l’année la plus récente), ou échelle absolue, ou DPE.
@@ -22,5 +30,5 @@ Carte statique (Leaflet) des ventes DVF 2014 à juin 2026, publiée sur GitHub P
 
 ## Hors ligne / écran d’accueil
 Sur iPhone : Safari → Partager → « Sur l’écran d’accueil ». Sur Android : Chrome → menu → « Installer l’application ».
-Le service worker (`sw.js`, actif en https uniquement) garde en cache la page, `ventes.js`, Leaflet et les tuiles déjà vues (400 max).
+Le service worker (`sw.js`, actif en https uniquement) garde en cache la page, `ventes.js`, Leaflet et les tuiles déjà vues (400 max). Les fichiers communes (`tuiles/*.json`) ne sont pas préchargés : ils entrent en cache seulement après avoir été consultés.
 Page et données : réseau d’abord, cache si pas de réseau. Pour forcer une mise à jour du cache après un gros changement, incrémenter `V` dans `sw.js`.

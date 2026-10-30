@@ -1,4 +1,4 @@
-"""Téléchargement des sources brutes d'une commune (tuile de l'outil ventes) dans ../communes/<insee>/ : python3 telecharger_commune.py 92051
+"""Téléchargement des sources brutes d'une commune (tuile de l'outil ventes) dans ../communes/<insee>/ : python3 telecharger_commune.py 92051 (ou un arrondissement de Paris, 75101 à 75120 : contour type arrondissement-municipal)
 Cerema DVF+ 2014-2020, geo-dvf 2021-2025, DGFiP 2026 S1 (depuis dvf_brut/s1.zip), cadastre Etalab, contour officiel, DPE ADEME."""
 import json, os, sys, time, io, zipfile, urllib.request, urllib.parse, gzip
 C = sys.argv[1]; B = "/workspace/immo"; D = os.path.join(B, "communes", C); os.makedirs(D, exist_ok=True)
@@ -13,17 +13,17 @@ def get(u, js=True, t=180):
 which = sys.argv[2:] or ["contour", "cadastre", "geodvf", "s1", "cerema", "dpe"]
 if "contour" in which:
     f = os.path.join(D, "contour.json")
-    if not os.path.exists(f): open(f, "w").write(json.dumps(get(f"https://geo.api.gouv.fr/communes/{C}?format=geojson&geometry=contour")))
+    if not os.path.exists(f): open(f, "w").write(json.dumps(get(f"https://geo.api.gouv.fr/communes/{C}?format=geojson&geometry=contour" + ("&type=arrondissement-municipal" if C.startswith(("751", "6938", "132")) else ""))))
     print("contour ok", flush=True)
 if "cadastre" in which:
     f = os.path.join(B, "cadastre", f"{C}-parcelles.json.gz")
-    if not os.path.exists(f): open(f, "wb").write(get(f"https://cadastre.data.gouv.fr/data/etalab-cadastre/latest/geojson/communes/92/{C}/cadastre-{C}-parcelles.json.gz", js=False))
+    if not os.path.exists(f): open(f, "wb").write(get(f"https://cadastre.data.gouv.fr/data/etalab-cadastre/latest/geojson/communes/{C[:2]}/{C}/cadastre-{C}-parcelles.json.gz", js=False))
     print("cadastre ok", flush=True)
 if "geodvf" in which:
     os.makedirs(os.path.join(D, "geodvf"), exist_ok=True)
     for y in range(2021, 2026):
         f = os.path.join(D, "geodvf", f"{y}.csv")
-        if not os.path.exists(f): open(f, "wb").write(get(f"https://files.data.gouv.fr/geo-dvf/latest/csv/{y}/communes/92/{C}.csv", js=False))
+        if not os.path.exists(f): open(f, "wb").write(get(f"https://files.data.gouv.fr/geo-dvf/latest/csv/{y}/communes/{C[:2]}/{C}.csv", js=False))
     print("geodvf ok", flush=True)
 if "s1" in which:
     f = os.path.join(D, "s1.txt")

@@ -1,7 +1,7 @@
 // Service worker minimal : coquille + données en cache pour l'usage hors ligne / écran d'accueil.
 // Réseau d'abord pour la page et les données (mise à jour dès qu'il y a du réseau), cache sinon.
 // Bibliothèques CDN : cache d'abord. Tuiles de carte : cache des tuiles déjà vues (plafonné).
-// Tuiles communes (tuiles/*.json) : pas dans la coquille ; mises en cache par reseauDabord seulement quand on les a chargées (on ne précharge jamais tout le 92).
+// Tuiles communes (tuiles/*.json) : pas dans la coquille ; mises en cache par reseauDabord seulement quand on les a chargées (on ne précharge jamais tout le 92 ni tout Paris).
 const V = "ventes-bc-v3", TU = "ventes-bc-tuiles-v1", MAXT = 400;
 const SHELL = ["./", "./index.html", "./ventes.js", "./annonces.js", "./annonces_calque.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 const CDN = ["https://unpkg.com/leaflet@1.9.4/dist/leaflet.css", "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",

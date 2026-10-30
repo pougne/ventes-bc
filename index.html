@@ -84,7 +84,7 @@ td{padding:3px;border-bottom:1px solid #eee}.num{text-align:right;white-space:no
 <label class="pill"><input type="checkbox" class="fz base" value="bc" checked><span class="sw" style="background:#374151"></span>Reste de BC</label>
 <label class="pill"><input type="checkbox" class="fz base" value="frange" checked><span class="sw" style="background:#9ca3af"></span>BC nord / Agnettes</label>
 <span id="fzt"></span></div>
-<div class="sub" style="margin-top:4px">Quartier Bac = tracé Eric + bande Flachat / mairie ; Ouest mairie = tracé Eric. Autres communes et arrondissements de Paris (Neuilly, Paris 16e…) : contour officiel, ventes chargées à la demande quand la carte s’en approche (zoom 14 et plus ; <span id="tst">aucune chargée</span>).</div>
+<div class="sub" style="margin-top:4px">Quartier Bac = tracé Eric + bande Flachat / mairie ; Ouest mairie = tracé Eric. Autres communes et arrondissements de Paris (Neuilly, Paris 16e…) : contour officiel, ventes chargées à la demande quand la carte s’en approche (zoom 14 et plus, Paris 15 et plus ; <span id="tst">aucune chargée</span>).</div>
 <h2>Couleur des points</h2>
 <div class="pills"><label class="pill"><input type="radio" name="cm" value="rel" checked>vs médiane de zone</label><label class="pill"><input type="radio" name="cm" value="abs">€/m² absolu</label></div>
 <label class="tg"><input type="checkbox" id="eur"><span><b>Prix en € <span class="yr">2026</span></b> : ramène chaque €/m² au niveau de prix actuel (popup, liste, médianes)</span></label>
@@ -432,8 +432,8 @@ async function chargerTuile(t) { if (TU.ok[t.insee] || TU.enCours[t.insee]) retu
     $("tst").textContent = Object.entries(TU.ok).map(([k, m]) => `${TU.reg.tuiles.find(u => u.insee === k).court} ${fmt(m.n)} ventes`).join(", ");
     apply(); toast(`${t.court} : ${fmt(T.meta.n)} ventes chargées`);
   } catch (e) { toast(`${t.court} : chargement impossible (${e.message})`); } finally { TU.enCours[t.insee] = false; } }
-function tuilesVisibles() { if (!TU.reg || map.getZoom() < 14) return; const b = map.getBounds(); // seulement si la commune est à l’écran (zoom 14+), pas de préchargement
-  for (const t of TU.reg.tuiles) if (!TU.ok[t.insee] && b.intersects(L.latLngBounds([t.bbox[1], t.bbox[0]], [t.bbox[3], t.bbox[2]])) && touche(t, b)) chargerTuile(t); }
+function tuilesVisibles() { if (!TU.reg || map.getZoom() < 14) return; const b = map.getBounds(), zo = map.getZoom(); // seulement si la commune est à l’écran (zoom 14+, Paris 15+ car dense), pas de préchargement
+  for (const t of TU.reg.tuiles) if (!TU.ok[t.insee] && zo >= (t.zmin || (t.insee.startsWith("751") ? 15 : 14)) && b.intersects(L.latLngBounds([t.bbox[1], t.bbox[0]], [t.bbox[3], t.bbox[2]])) && touche(t, b)) chargerTuile(t); }
 // la commune (contour simplifié du registre) est-elle vraiment à l'écran ? sommet dans l'écran ou point de l'écran (grille 6×6) dans le contour
 const dans = (x, y, R) => { let c = false; for (let i = 0, j = R.length - 1; i < R.length; j = i++) { const [xi, yi] = R[i], [xj, yj] = R[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
 function touche(t, b) { const R = t.contour; if (!R) return true; if (R.some(([x, y]) => b.contains([y, x]))) return true;

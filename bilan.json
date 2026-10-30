@@ -32,8 +32,41 @@
   "p": "€/m²",
   "f": "VEFA (neuf)",
   "src": "G geo-dvf / C DVF+ Cerema / D DVF DGFiP brute (2026 S1)",
-  "q": "id parcelle cadastrale"
+  "q": "id parcelle cadastrale",
+  "dpe": "étiquette DPE A à G (ADEME, croisement adresse / surface, absent si pas de match fiable)",
+  "dpe_g": "étiquette GES",
+  "dpe_d": "date d'établissement du DPE",
+  "dpe_s": "surface habitable du DPE m²",
+  "dpe_ax": "0 match strict / 1 approximation / 2 DPE de l'immeuble",
+  "dpe_n": "nb de logements avec DPE à l'adresse"
  },
  "parcelles": 2340,
- "sans_parcelle": 0
+ "sans_parcelle": 0,
+ "dpe": {
+  "dpe_charges": 39731,
+  "dpe_actifs": 39729,
+  "par_commune": {
+   "92004": 27792,
+   "92009": 7001,
+   "92025": 4936
+  },
+  "ventes": 12080,
+  "match_strict": 4891,
+  "match_approx": 5121,
+  "match_immeuble": 85,
+  "sans_dpe": 1983,
+  "ambigus_passes_en_approx": 3550,
+  "ventes_avec_dpe_a_l_adresse": 10349,
+  "taux_strict": 0.405,
+  "taux_tout": 0.836,
+  "parcelles": 2436,
+  "parcelles_strict": 1024,
+  "parcelles_un_dpe": 1603,
+  "par_type": {
+   "Maison": 0.423,
+   "Appartement": 0.902
+  },
+  "ventes_2021_plus": 0.883,
+  "ventes_avant_2021": 0.804
+ }
 }

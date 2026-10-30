@@ -195,4 +195,7 @@ $("loc").onclick = () => map.locate({setView: true, maxZoom: 18, enableHighAccur
 map.on("locationfound", e => { if (me) map.removeLayer(me); me = L.circleMarker(e.latlng, {radius: 8, color: "#fff", weight: 3, fillColor: "#1e88e5", fillOpacity: 1}).addTo(map); });
 map.on("locationerror", e => alert("Position indisponible : " + e.message + " (la géolocalisation exige https ou localhost sur la plupart des navigateurs)."));
 apply(); syncParc();
-</script></body></html>
+</script>
+<script src="annonces.js"></script>
+<script src="annonces_calque.js"></script>
+</body></html>

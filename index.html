@@ -84,7 +84,7 @@ td{padding:3px;border-bottom:1px solid #eee}.num{text-align:right;white-space:no
 <label class="pill"><input type="checkbox" class="fz base" value="bc" checked><span class="sw" style="background:#374151"></span>Reste de BC</label>
 <label class="pill"><input type="checkbox" class="fz base" value="frange" checked><span class="sw" style="background:#9ca3af"></span>BC nord / Agnettes</label>
 <span id="fzt"></span></div>
-<div class="sub" style="margin-top:4px">Quartier Bac = tracé Eric + bande Flachat / mairie ; Ouest mairie = tracé Eric. Autres communes (Neuilly…) : contour officiel, ventes chargées à la demande quand la carte s’en approche (<span id="tst">aucune chargée</span>).</div>
+<div class="sub" style="margin-top:4px">Quartier Bac = tracé Eric + bande Flachat / mairie ; Ouest mairie = tracé Eric. Autres communes (Neuilly…) : contour officiel, ventes chargées à la demande quand la carte s’en approche (zoom 14 et plus ; <span id="tst">aucune chargée</span>).</div>
 <h2>Couleur des points</h2>
 <div class="pills"><label class="pill"><input type="radio" name="cm" value="rel" checked>vs médiane de zone</label><label class="pill"><input type="radio" name="cm" value="abs">€/m² absolu</label></div>
 <label class="tg"><input type="checkbox" id="eur"><span><b>Prix en € <span class="yr">2026</span></b> : ramène chaque €/m² au niveau de prix actuel (popup, liste, médianes)</span></label>
@@ -145,12 +145,12 @@ document.getElementById("bm").onclick = e => {
   document.querySelectorAll("#bm button").forEach(x => x.classList.toggle("on", x === b));
 };
 const ZS = {"Quartier Bac": "#7c3aed", "Ouest mairie BC": "#15803d", "Frange Agnettes / BC nord": "#6b7280", "Reste de Bois-Colombes": "#374151"};
-const ZTC = {neuilly: "#b45309"}; // couleur des zones des tuiles communes
+const ZTC = {}; // couleur des zones des tuiles communes (fournie par chaque tuile)
 for (const [n, g] of Object.entries(V.zones)) L.geoJSON(g, {interactive: false, style: {color: ZS[n] || "#333", weight: n.startsWith("Reste") ? 2 : 2.5, opacity: .85, fill: false, dashArray: n.startsWith("Frange") ? "6 4" : null}}).addTo(map);
 // palette douce et lisible (bleu = bas / sous la médiane, jaune = moyen / autour, rouge = haut / au-dessus)
 const PAL = [[44,123,182],[125,180,213],[240,205,110],[236,135,92],[196,43,58]];
 const ramp = x => { x = Math.max(0, Math.min(1, x)); const i = Math.min(3, Math.floor(x * 4)), f = x * 4 - i; return `rgb(${PAL[i].map((v, k) => Math.round(v + (PAL[i + 1][k] - v) * f))})`; };
-const ECH = {base: {M: [6000, 11000], A: [4500, 8000]}, "92051": {M: [10000, 22000], A: [8000, 14000]}};
+const ECH = {base: {M: [6000, 11000], A: [4500, 8000]}}; // + échelle de chaque tuile commune (T.ech)
 function col(p, t, g) { const [a, b] = (ECH[g] || ECH.base)[t]; return ramp((p - a) / (b - a)); }
 const colRel = r => ramp((r + .25) / .5); // -25 % et moins -> bleu, +25 % et plus -> rouge
 const sheetH = () => { const s = $("sheet"); return s ? s.offsetHeight : 60; };
@@ -297,7 +297,7 @@ function apply() {
 function legend(cd) {
   const g = cd ? `Couleur = DPE ADEME (gris = sans DPE).`
     : CM === "rel" ? `Couleur = écart à la médiane €/m² de la zone, même type, fenêtre ${Y0}–${Y1} : <i style="background:${colRel(-.25)}"></i>sous (−25 % et moins) <i style="background:${colRel(0)}"></i>autour <i style="background:${colRel(.25)}"></i>au-dessus (+25 % et plus). Comparaison faite en € ${YR} ; zone avec moins de ${NMIN} ventes : médiane de tout le périmètre.`
-    : `Couleur €/m²${eurL()} (maisons 6 à 11 k€, appartements 4,5 à 8 k€${TU.ok["92051"] ? " ; Neuilly : maisons 10 à 22 k€, appartements 8 à 14 k€" : ""}) : <i style="background:${ramp(0)}"></i>bas <i style="background:${ramp(.5)}"></i>moyen <i style="background:${ramp(1)}"></i>haut.`;
+    : `Couleur €/m²${eurL()} (maisons 6 à 11 k€, appartements 4,5 à 8 k€${Object.keys(TU.ok).map(k => { const e = ECH[k], c = ZN[TU.z[k]]; return e ? ` ; ${c} : maisons ${e.M[0] / 1000} à ${e.M[1] / 1000} k€, appartements ${e.A[0] / 1000} à ${e.A[1] / 1000} k€` : ""; }).join("")}) : <i style="background:${ramp(0)}"></i>bas <i style="background:${ramp(.5)}"></i>moyen <i style="background:${ramp(1)}"></i>haut.`;
   $("leg").innerHTML = g + ` Gros point cerclé de foncé = maison, petit point = appartement. Point pâle à bord gris pointillé = dernière vente hors fenêtre (remontée). Un point = une parcelle ; clic = tout son historique. Au zoom 17+, les parcelles vendues sont teintées et cliquables ; un clic ailleurs ouvre la parcelle vendue la plus proche (40 m max).<br><b>€ ${YR}</b> : €/m² × (médiane annuelle ${YR} / médiane de l’année de vente), même type ; par zone si au moins 30 ventes chaque année, sinon tout le périmètre. ${YR} = premier semestre seulement.`;
 }
 // ---- fiche zone : courbe des médianes annuelles (SVG maison, sans bibliothèque)
@@ -410,7 +410,7 @@ function readHash() { const h = new URLSearchParams(location.hash.slice(1)); if 
 $("share").onclick = async () => { writeHash(); const u = location.href;
   try { await navigator.clipboard.writeText(u); toast("Lien copié"); } catch (e) { prompt("Lien à copier :", u); } };
 // ---- tuiles communes : ventes d'autres communes (fichier par commune, format colonnaire), chargées quand la carte s'en approche
-const TU = {reg: null, ok: {}, enCours: {}};
+const TU = {reg: null, ok: {}, enCours: {}, z: {}};
 function decoder(T) { const c = T.c, [X0, Y0c] = T.o, n = c.d.length, out = [], dt = x => { x = String(x).padStart(6, "0"); return `20${x.slice(0, 2)}-${x.slice(2, 4)}-${x.slice(4, 6)}`; };
   for (let i = 0; i < n; i++) { const p = {q: c.q[i] >= 0 ? T.Q[c.q[i]] : "", d: dt(c.d[i]), z: T.z, c: T.court, a: T.A[c.a[i]], ax: +c.ax[i], t: c.t[i], s: c.s[i], v: c.v[i],
       f: +c.f[i], src: c.src[i], g: T.insee, ll: [Y0c + c.y[i] / 1e6, X0 + c.x[i] / 1e6]};
@@ -422,7 +422,7 @@ function decoder(T) { const c = T.c, [X0, Y0c] = T.o, n = c.d.length, out = [], 
   const parc = {}; T.P.forEach((g, i) => { if (!g) return; parc[T.Q[i]] = g[0] === "P" ? {t: "Polygon", c: g.slice(1).map(ring)} : {t: "MultiPolygon", c: g.slice(1).map(pl => pl.map(ring))}; });
   const da = {}; for (const k in T.dpeA) da[T.A[+k]] = T.dpeA[k];
   return {props: out, parc, da}; }
-function zonePill(T) { ZN[T.z] = T.nom; const l = document.createElement("label"); l.className = "pill";
+function zonePill(T) { ZN[T.z] = T.nom; TU.z[T.insee] = T.z; if (T.couleur) ZTC[T.z] = T.couleur; if (T.ech) ECH[T.insee] = T.ech; const l = document.createElement("label"); l.className = "pill";
   l.innerHTML = `<input type="checkbox" class="fz tz" value="${T.z}"${ZOFF.has(T.z) ? "" : " checked"}><span class="sw" style="background:${ZTC[T.z] || "#b45309"}"></span>${T.court}`;
   $("fzt").appendChild(l); l.querySelector("input").addEventListener("change", e => { e.target.checked ? ZOFF.delete(T.z) : ZOFF.add(T.z); apply(); }); }
 async function chargerTuile(t) { if (TU.ok[t.insee] || TU.enCours[t.insee]) return; TU.enCours[t.insee] = true; toast(`Chargement des ventes ${t.court}…`);
@@ -432,15 +432,21 @@ async function chargerTuile(t) { if (TU.ok[t.insee] || TU.enCours[t.insee]) retu
     $("tst").textContent = Object.entries(TU.ok).map(([k, m]) => `${TU.reg.tuiles.find(u => u.insee === k).court} ${fmt(m.n)} ventes`).join(", ");
     apply(); toast(`${t.court} : ${fmt(T.meta.n)} ventes chargées`);
   } catch (e) { toast(`${t.court} : chargement impossible (${e.message})`); } finally { TU.enCours[t.insee] = false; } }
-function tuilesVisibles() { if (!TU.reg || map.getZoom() < 13) return; const b = map.getBounds(); // seulement si la commune est à l’écran (zoom 13+), pas de préchargement
-  for (const t of TU.reg.tuiles) if (!TU.ok[t.insee] && b.intersects(L.latLngBounds([t.bbox[1], t.bbox[0]], [t.bbox[3], t.bbox[2]]))) chargerTuile(t); }
+function tuilesVisibles() { if (!TU.reg || map.getZoom() < 14) return; const b = map.getBounds(); // seulement si la commune est à l’écran (zoom 14+), pas de préchargement
+  for (const t of TU.reg.tuiles) if (!TU.ok[t.insee] && b.intersects(L.latLngBounds([t.bbox[1], t.bbox[0]], [t.bbox[3], t.bbox[2]])) && touche(t, b)) chargerTuile(t); }
+// la commune (contour simplifié du registre) est-elle vraiment à l'écran ? sommet dans l'écran ou point de l'écran (grille 6×6) dans le contour
+const dans = (x, y, R) => { let c = false; for (let i = 0, j = R.length - 1; i < R.length; j = i++) { const [xi, yi] = R[i], [xj, yj] = R[j]; if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c; } return c; };
+function touche(t, b) { const R = t.contour; if (!R) return true; if (R.some(([x, y]) => b.contains([y, x]))) return true;
+  const w = b.getWest(), e = b.getEast(), s = b.getSouth(), n = b.getNorth();
+  for (let i = 0; i <= 5; i++) for (let j = 0; j <= 5; j++) if (dans(w + (e - w) * i / 5, s + (n - s) * j / 5, R)) return true; return false; }
 async function tuiles() { try { const r = await fetch("tuiles/index.json", {cache: "no-cache"}); if (r.ok) TU.reg = await r.json(); } catch (e) {} tuilesVisibles(); map.on("moveend", tuilesVisibles); }
 // ---- démarrage
 $("tog").onclick = () => document.body.classList.toggle("open");
 $("sidex").onclick = () => document.body.classList.remove("open");
 document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.remove("open"); });
 const b0 = readHash();
-document.querySelectorAll("#side input").forEach(e => e.addEventListener(e.type === "range" || e.type === "number" ? "input" : "change", apply));
+let apT; const applyD = () => { clearTimeout(apT); apT = setTimeout(apply, P.length > 30000 ? 180 : 0); }; // curseurs : on attend la fin du geste quand beaucoup de communes sont chargées
+document.querySelectorAll("#side input").forEach(e => e.type === "range" || e.type === "number" ? e.addEventListener("input", applyD) : e.addEventListener("change", apply));
 hashOn = true; apply(); syncParc(); tuiles();
 if (b0) { BAL.r = [100, 250, 500].includes(b0) ? b0 : 250; $("rad").querySelectorAll("button").forEach(x => x.classList.toggle("on", +x.dataset.r === BAL.r)); balade(true); }
 window.addEventListener("resize", setSh);

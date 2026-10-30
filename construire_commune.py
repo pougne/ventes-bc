@@ -6,10 +6,21 @@ import os, sys, json, glob, io, gzip, uuid, urllib.request, datetime, numpy as n
 from shapely.geometry import shape
 O = os.path.dirname(os.path.abspath(__file__)); B = os.path.dirname(O)
 C = sys.argv[1] if len(sys.argv) > 1 else "92051"
-COM = {"92051": {"nom": "Neuilly-sur-Seine", "z": "neuilly", "court": "Neuilly"}}[C]
+COMS = {  # nom, code zone, libellé court, couleur du contour, bornes €/m² [min, max, max maison >= 100 m²], échelle couleur absolue {M: [bas, haut], A: [bas, haut]}
+ "92051": ("Neuilly-sur-Seine", "neuilly", "Neuilly", "#b45309", (4000, 20000, 35000), {"M": [10000, 22000], "A": [8000, 14000]}),
+ "92044": ("Levallois-Perret", "levallois", "Levallois", "#0e7490", (3000, 17000, 30000), {"M": [8000, 14000], "A": [7000, 12000]}),
+ "92024": ("Clichy", "clichy", "Clichy", "#be185d", (2500, 15000, 25000), {"M": [6000, 11000], "A": [5500, 9500]}),
+ "92026": ("Courbevoie", "courbevoie", "Courbevoie", "#4d7c0f", (2500, 15000, 25000), {"M": [7000, 12000], "A": [5500, 9500]}),
+ "92062": ("Puteaux", "puteaux", "Puteaux", "#7c2d12", (2500, 15000, 25000), {"M": [7000, 12000], "A": [5500, 9500]}),
+ "92073": ("Suresnes", "suresnes", "Suresnes", "#1d4ed8", (2500, 15000, 25000), {"M": [6000, 11000], "A": [5000, 8500]}),
+ "92004": ("Asnières-sur-Seine", "asnieres", "Asnières", "#9333ea", (2000, 12000, 20000), {"M": [6000, 11000], "A": [4500, 8000]}),
+ "92025": ("Colombes", "colombes", "Colombes", "#c2410c", (2000, 12000, 20000), {"M": [5000, 9000], "A": [3500, 6500]}),
+ "92035": ("La Garenne-Colombes", "garenne", "La Garenne", "#0f766e", (2000, 12000, 20000), {"M": [6000, 11000], "A": [5000, 8500]}),
+ "92050": ("Nanterre", "nanterre", "Nanterre", "#a16207", (2000, 12000, 20000), {"M": [4500, 8500], "A": [3500, 6500]}),
+}
+_c = COMS[C]; COM = {"nom": _c[0], "z": _c[1], "court": _c[2], "couleur": _c[3], "ech": _c[5]}
 # bornes €/m² : [min, max] tous types ; maison >= 100 m² gardée jusqu'à max_maison (vrai haut de gamme). BC : 2 000 / 12 000 / 20 000.
-BORNES = {"92051": (4000, 20000, 35000)}[C]
-PMIN, PMAX, PMAXM = BORNES
+PMIN, PMAX, PMAXM = _c[4]
 D = os.path.join(B, "communes", C)
 def ban_csv(df, url, extra):
     buf = io.StringIO(); df.to_csv(buf, index=False); bnd = uuid.uuid4().hex
@@ -90,6 +101,9 @@ contour = shape(json.load(open(os.path.join(D, "contour.json")))["geometry"])
 g = gpd.GeoDataFrame(t, geometry=gpd.points_from_xy(t.lon, t.lat), crs=4326)
 g = g[g.within(contour.buffer(0.0003))].copy()  # ~30 m de marge (parcelles en limite)
 st["hors_contour"] = int(len(t) - len(g))
+# ventes déjà dans le jeu de base ventes.js (BC entier, quartier Bac / bande Flachat d'Asnières, frange Colombes) : retirées de la tuile pour éviter les doublons
+base = shape(json.load(open(os.path.join(B, "communes", "perimetre_base.json"))))
+n1 = len(g); g = g[~g.within(base)].copy(); st["deja_dans_ventes_js"] = int(n1 - len(g))
 mq = g.adresse.isna() | (g.adresse.fillna("") == "")
 if mq.any():
     rv = ban_csv(g.loc[mq, ["lat", "lon"]].assign(i=g.index[mq]), "https://api-adresse.data.gouv.fr/reverse/csv/", [("result_columns", "result_label")]).set_index("i").result_label
@@ -99,11 +113,11 @@ g["adresse"] = g.adresse.fillna("adresse inconnue").str.title()
 g["pm2"] = g.pm2.round(0).astype(int); g["valeur"] = g.valeur.round(0).astype(int); g["surface"] = g.surface.round(0).astype(int); g["annee"] = g.annee.astype(int)
 g["nom_commune"] = COM["nom"]; g["zone"] = COM["z"]
 # ---- 5. DPE ADEME croisé (dpe_joindre.py, cache ../dpe/dpe_<insee>.csv)
-import shutil
-fd = os.path.join(B, "dpe", f"dpe_{C}.csv")
-if not os.path.exists(fd) and os.path.exists(os.path.join(D, "dpe.csv")): shutil.copy(os.path.join(D, "dpe.csv"), fd)
+# DPE de toute la commune (../communes/<insee>/dpe.csv) ; cache BAN propre à la commune (ban_ventes.csv dans le même dossier)
+fd = os.path.join(D, f"dpe_{C}.csv")
+if not os.path.exists(fd): os.symlink("dpe.csv", fd)
 sys.path.insert(0, O); import dpe_joindre
-dpe_joindre.INSEE = {COM["nom"]: C}
+dpe_joindre.INSEE = {COM["nom"]: C}; dpe_joindre.D = D
 g, DPEA, stat_dpe = dpe_joindre.joindre(g)
 g = g.sort_values(["date", "parcelle"], ascending=[False, True]).reset_index(drop=True)
 g.drop(columns="geometry").to_csv(os.path.join(D, "ventes.csv"), index=False)
@@ -143,7 +157,7 @@ meta = {"n": len(g), "annees": [int(g.annee.min()), int(g.annee.max())], "date_m
         "approx": int(g.adresse_approx.sum()), "bornes_pm2": {"min": PMIN, "max": PMAX, "max_maison_100m2": PMAXM}, "nettoyage": st,
         "dpe": {k: stat_dpe[k] for k in ["dpe_actifs", "match_strict", "match_approx", "match_immeuble", "sans_dpe", "taux_strict", "taux_tout"]},
         "par_annee": g.groupby("annee").size().to_dict(), "par_type": g["type"].value_counts().to_dict()}
-tile = {"v": 1, "insee": C, "nom": COM["nom"], "court": COM["court"], "z": COM["z"], "o": [X0, Y0], "meta": meta,
+tile = {"v": 1, "insee": C, "nom": COM["nom"], "court": COM["court"], "z": COM["z"], "couleur": COM["couleur"], "ech": COM["ech"], "o": [X0, Y0], "meta": meta,
         "contour": json.loads(gpd.GeoSeries([contour.simplify(0.00003)]).to_json())["features"][0]["geometry"],
         "A": A, "Q": Q, "P": P, "dpeA": {str(AI[a]): v for a, v in DPEA.items() if a in AI}, "c": col}
 txt = json.dumps(tile, ensure_ascii=False, separators=(",", ":"), default=int)
@@ -152,6 +166,6 @@ gz = len(gzip.compress(txt.encode(), 9))
 fi = os.path.join(O, "tuiles", "index.json")
 reg = json.load(open(fi)) if os.path.exists(fi) else {"v": 1, "tuiles": []}
 reg["tuiles"] = [x for x in reg["tuiles"] if x["insee"] != C] + [{"insee": C, "nom": COM["nom"], "court": COM["court"], "z": COM["z"], "bbox": [w, so, e, n], "url": f"tuiles/{C}.json",
-                 "n": len(g), "octets": len(txt.encode()), "octets_gzip": gz, "genere_le": genere, "v": pd.Timestamp.now().strftime("%Y%m%d%H%M")}]
+                 "n": len(g), "contour": [[round(x, 4), round(y, 4)] for x, y in (contour.simplify(0.0008) if contour.geom_type == "Polygon" else max(contour.geoms, key=lambda p: p.area).simplify(0.0008)).exterior.coords], "octets": len(txt.encode()), "octets_gzip": gz, "genere_le": genere, "v": pd.Timestamp.now().strftime("%Y%m%d%H%M")}]
 json.dump(reg, open(fi, "w"), ensure_ascii=False, indent=1)
 print(json.dumps({"ventes": len(g), "octets": len(txt.encode()), "gzip": gz, "nettoyage": st, "dpe": meta["dpe"], "par_annee": meta["par_annee"], "par_type": meta["par_type"]}, ensure_ascii=False, default=int))

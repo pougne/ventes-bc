@@ -1,0 +1,37 @@
+{
+ "genere_le": "30/10/2026",
+ "n": 7788,
+ "annees": [
+  2014,
+  2025
+ ],
+ "hist": {
+  "brut": 19761,
+  "meme_parcelle_meme_jour": 1999,
+  "un_seul_logement": 13845,
+  "hors_bornes_ou_sous_20m2": 719,
+  "gardees": 13126
+ },
+ "par_source": {
+  "DVF+ Cerema": 4854,
+  "geo-dvf": 2934
+ },
+ "approx": 854,
+ "cles": {
+  "d": "date",
+  "y": "année",
+  "z": "zone (bac, ouest, frange, bc)",
+  "c": "commune",
+  "a": "adresse",
+  "ax": "adresse approchée (géocodage inverse)",
+  "t": "M maison / A appartement",
+  "s": "surface bâtie m²",
+  "v": "prix €",
+  "p": "€/m²",
+  "f": "VEFA (neuf)",
+  "src": "G geo-dvf / C DVF+ Cerema",
+  "q": "id parcelle cadastrale"
+ },
+ "parcelles": 1666,
+ "sans_parcelle": 0
+}

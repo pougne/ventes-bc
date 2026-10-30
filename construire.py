@@ -1,11 +1,17 @@
 """Construit l'outil carte cliquable des ventes (outil-ventes/index.html + ventes.csv).
-Périmètre : points dans le quartier Bac, l'ouest mairie ou le contour de Bois-Colombes.
+Périmètre : points dans le quartier Bac (élargi à la bande Flachat / mairie côté Asnières), l'ouest mairie ou le contour de Bois-Colombes.
 Sources : dvf_clean.csv (geo-dvf 2021-2025 nettoyé) + DVF+ open-data Cerema 2014-2020 (dvf_hist/*.geojson), même nettoyage.
 2010-2013 : pas en open data (DV3F réservé aux acteurs publics)."""
 import os, sys, json, glob, io, urllib.request, uuid, pandas as pd, geopandas as gpd
 from shapely.geometry import shape
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from zones_geo import ZONES, zone_bac, zone_ouest, bc, B
+from zones_geo import ZONES, zone_bac, zone_ouest, bc, asn, B
+from shapely.geometry import box
+# bande Flachat / mairie BC (Asnières entre l'avenue Flachat et la mairie) : ajoutée au périmètre de l'outil seulement (alertes inchangées)
+bande = box(2.265, 48.905, 2.285, 48.918).intersection(asn.union(bc))
+# prolongement Flachat du quartier Bac : la partie Asnières de la bande hors BC / ouest / frange est classée « Quartier Bac »
+bac_ext = zone_bac.union(bande.difference(bc).difference(ZONES["Ouest mairie BC"]).difference(ZONES["Frange Agnettes / BC nord"]))
+ZT = dict(ZONES, **{"Quartier Bac": bac_ext})  # zones de l'outil
 O = os.path.join(B, "outil-ventes")
 # 1. 2021-2025 nettoyé
 d = pd.read_csv(os.path.join(B, "dvf_clean.csv")); d = d[d.lon.notna()]
@@ -50,9 +56,9 @@ cad = cad[cad["id"].isin(set(t.parcelle.dropna()))].drop_duplicates("id").set_in
 rp = cad.geometry.representative_point()
 t["lon"] = t.parcelle.map(rp.x).fillna(t.lon); t["lat"] = t.parcelle.map(rp.y).fillna(t.lat)
 g = gpd.GeoDataFrame(t, geometry=gpd.points_from_xy(t.lon, t.lat), crs="EPSG:4326")
-per = zone_bac.union(zone_ouest).union(bc); g = g[g.within(per)].copy()
+per = zone_bac.union(zone_ouest).union(bc).union(bande); g = g[g.within(per)].copy()
 g["zone"] = "Reste de Bois-Colombes"
-for n in ["Frange Agnettes / BC nord", "Ouest mairie BC", "Quartier Bac"]: g.loc[g.within(ZONES[n]), "zone"] = n
+for n in ["Frange Agnettes / BC nord", "Ouest mairie BC", "Quartier Bac"]: g.loc[g.within(ZT[n]), "zone"] = n
 # 3. adresses manquantes : géocodage inverse BAN (adresse la plus proche du point de parcelle, marquée « approx. »)
 m = g.adresse.isna()
 if m.any():
@@ -68,7 +74,7 @@ g["pm2"] = g.pm2.round(0).astype(int); g["valeur"] = g.valeur.round(0).astype(in
 cols = ["parcelle", "date", "annee", "zone", "nom_commune", "adresse", "adresse_approx", "type", "surface", "valeur", "pm2", "nature", "lat", "lon", "source"]
 g = g.sort_values("date", ascending=False)
 g[cols].to_csv(os.path.join(O, "ventes.csv"), index=False)
-zg = {n: json.loads(gpd.GeoSeries([ZONES[n] if n != "Reste de Bois-Colombes" else bc], crs="EPSG:4326").to_json())["features"][0]["geometry"] for n in ZONES}
+zg = {n: json.loads(gpd.GeoSeries([ZT[n] if n != "Reste de Bois-Colombes" else bc], crs="EPSG:4326").to_json())["features"][0]["geometry"] for n in ZONES}
 ZC = {"Quartier Bac": "bac", "Ouest mairie BC": "ouest", "Frange Agnettes / BC nord": "frange", "Reste de Bois-Colombes": "bc"}
 feats = [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [round(r.lon, 6), round(r.lat, 6)]},
           "properties": {"q": r.parcelle if isinstance(r.parcelle, str) else "", "d": r.date, "y": int(r.annee), "z": ZC[r.zone], "c": "BC" if r.nom_commune == "Bois-Colombes" else "AS", "a": r.adresse, "ax": int(bool(r.adresse_approx)),

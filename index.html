@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 <style>
-*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#222;display:flex;height:100vh}
+*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#222;display:flex;height:100vh;height:100dvh}
 #side{width:360px;overflow:auto;padding:12px 14px;border-right:1px solid #ddd;background:#fafafa}#map{flex:1}
 h1{font-size:17px;margin:0 0 4px}h2{font-size:13px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em;color:#555}
 .sub{color:#666;font-size:12px}label{display:block;margin:3px 0;cursor:pointer}.row{display:flex;gap:8px;align-items:center}
@@ -17,10 +17,15 @@ td{padding:3px;border-bottom:1px solid #eee}tr:hover td{background:#fff6d5;curso
 .leg i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-2px}
 .leaflet-popup-content{font-size:13px}.approx{color:#888;font-size:11px}
 #tog,#loc{display:none}.hist{border-collapse:collapse;margin-top:4px;font-size:12px}.hist td{padding:2px 4px;border-bottom:1px solid #eee}.hist tr.in td{font-weight:600}.hist tr.out td{color:#666}
-.badge{display:inline-block;background:#fff3cd;border:1px solid #e0c060;border-radius:4px;padding:0 4px;font-size:11px}.leaflet-popup-content{max-height:55vh;overflow:auto}
+.badge{display:inline-block;background:#fff3cd;border:1px solid #e0c060;border-radius:4px;padding:0 4px;font-size:11px}.leaflet-popup-content{max-height:55vh;max-height:min(55vh,calc(100dvh - 190px));overflow:auto;margin:10px 12px 0 12px;-webkit-overflow-scrolling:touch}
+.leaflet-container a.leaflet-popup-close-button{width:40px;height:40px;top:4px;right:4px;font:30px/38px system-ui,-apple-system,sans-serif;color:#333;background:#fff;border-radius:50%;box-shadow:0 1px 4px #0005;text-align:center;z-index:20}
+.leaflet-container a.leaflet-popup-close-button:hover,.leaflet-container a.leaflet-popup-close-button:focus{color:#000;background:#eee}
+.pop-t{padding-right:40px;min-height:40px}.pop-f{position:sticky;bottom:0;background:#fff;padding:6px 0 8px;margin-top:6px;border-top:1px solid #eee;text-align:center}
+.pop-x{font-size:15px;font-weight:600;padding:8px 18px;min-height:40px;border-radius:20px}
+@media(max-width:800px){.leaflet-popup-content{font-size:12.5px;max-height:48vh;max-height:min(48vh,calc(100dvh - 200px))}.hist{font-size:11.5px}.hist td{padding:2px 3px}}
 .btn{position:absolute;z-index:1000;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:6px;padding:6px 10px;font-weight:600}
 @media(max-width:800px){#side{position:absolute;z-index:1100;left:0;top:0;bottom:0;width:88vw;transform:translateX(-100%);transition:transform .2s;box-shadow:2px 0 8px #0003}
- body.open #side{transform:none}#tog{display:block;left:10px;top:84px}#map{width:100vw;height:100vh}}
+ body.open #side{transform:none}#tog{display:block;left:10px;top:84px}#map{width:100vw;height:100vh;height:100dvh}}
 #loc{display:block;right:10px;top:10px}
 </style></head><body>
 <div id="side">
@@ -34,7 +39,7 @@ td{padding:3px;border-bottom:1px solid #eee}tr:hover td{background:#fff6d5;curso
 <label><input type="checkbox" class="ft" value="M" checked> Maisons</label>
 <label><input type="checkbox" class="ft" value="A" checked> Appartements</label>
 <h2>Zone</h2>
-<label><input type="checkbox" class="fz" value="bac" checked> Quartier Bac (tracé Eric)</label>
+<label><input type="checkbox" class="fz" value="bac" checked> Quartier Bac (tracé Eric + bande Flachat / mairie)</label>
 <label><input type="checkbox" class="fz" value="ouest" checked> Ouest mairie BC (tracé Eric)</label>
 <label><input type="checkbox" class="fz" value="bc" checked> Reste de Bois-Colombes</label>
 <label><input type="checkbox" class="fz" value="frange" checked> BC nord / frange Agnettes</label>
@@ -68,6 +73,10 @@ for (const [n, g] of Object.entries(V.zones)) L.geoJSON(g, {interactive: false, 
 function col(p, t) { const [a, b] = t === "M" ? [6000, 11000] : [4500, 8000]; let x = Math.max(0, Math.min(1, (p - a) / (b - a)));
   const s = [[26,152,80],[145,207,96],[254,224,139],[252,141,89],[215,48,39]]; const i = Math.min(3, Math.floor(x * 4)), f = x * 4 - i;
   const c = s[i].map((v, k) => Math.round(v + (s[i + 1][k] - v) * f)); return `rgb(${c})`; }
+// options communes des popups : largeur adaptée au téléphone, recentrage en laissant la place aux boutons et à la barre Safari
+const PO = () => ({maxWidth: Math.min(360, window.innerWidth - 56), minWidth: Math.min(240, window.innerWidth - 56), autoPan: true, keepInView: true,
+  autoPanPaddingTopLeft: [12, window.innerWidth <= 800 ? 96 : 70], autoPanPaddingBottomRight: [12, 40]});
+const wrap = h => h + `<div class="pop-f"><button class="pop-x" onclick="map.closePopup()">× Fermer</button></div>`;
 const dfr = d => d.split("-").reverse().join("/");
 const BYQ = {}, BYA = {};
 F.forEach((f, i) => { const p = f.properties; p.i = i; p.ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]]; const q = p.q || ("pt" + i);
@@ -78,8 +87,8 @@ const inW = p => p.y >= Y0 && p.y <= Y1;
 function popupParc(q, note) {
   const a = BYQ[q], last = a[0], lw = a.find(inW);
   const adrs = [...new Set(a.map(p => p.a))];
-  let h = (note ? `<div class="approx">${note}</div>` : "") + `<b>${adrs.join("<br>")}</b>${last.ax ? ' <span class="approx">(adresse la plus proche)</span>' : ''}<br>`;
-  h += `<span class="approx">Parcelle ${q.startsWith("pt") ? "inconnue" : q.slice(5, 8) === "000" ? q.slice(8, 10).replace(/^0/, "") + " " + +q.slice(10) : q} · ${ZN[last.z]} · position approximative (parcelle)</span><br>`;
+  let h = `<div class="pop-t">` + (note ? `<div class="approx">${note}</div>` : "") + `<b>${adrs.join("<br>")}</b>${last.ax ? ' <span class="approx">(adresse la plus proche)</span>' : ''}<br>`;
+  h += `<span class="approx">Parcelle ${q.startsWith("pt") ? "inconnue" : q.slice(5, 8) === "000" ? q.slice(8, 10).replace(/^0/, "") + " " + +q.slice(10) : q} · ${ZN[last.z]} · position approximative (parcelle)</span></div>`;
   const ref = lw || last;
   h += `<div style="margin-top:4px">${lw ? "Dernière vente dans la fenêtre" : `<span class="badge">Aucune vente ${Y0}–${Y1}</span> dernière vente connue`} :<br><b>${dfr(ref.d)} · ${ref.t === "M" ? "Maison" : "Appartement"}${ref.f ? " (VEFA)" : ""} · ${ref.s} m² · ${fmt(ref.v)} € · ${fmt(ref.p)} €/m²</b></div>`;
   h += `<div style="margin-top:6px">Historique complet de la parcelle (${a.length} vente${a.length > 1 ? "s" : ""}, depuis 2014) :</div><table class="hist">` +
@@ -88,7 +97,7 @@ function popupParc(q, note) {
   if (oth.length) h += `<div style="margin-top:6px">Même adresse, autre(s) parcelle(s) :</div><table class="hist">` + oth.flatMap(o => BYQ[o]).sort((x, y) => x.d < y.d ? 1 : -1).slice(0, 15)
     .map(p => `<tr class="${inW(p) ? "in" : "out"}"><td>${dfr(p.d)}</td><td>${p.t}</td><td class="num">${p.s} m²</td><td class="num">${fmt(p.v)} €</td><td class="num">${fmt(p.p)} €/m²</td></tr>`).join("") + "</table>";
   h += `<div class="approx" style="margin-top:4px">Source : ${[...new Set(a.map(p => p.src === "C" ? "DVF+ Cerema" : "geo-dvf"))].join(", ")} · en gras = dans la fenêtre ${Y0}–${Y1}</div>`;
-  return h;
+  return wrap(h);
 }
 const clu = L.markerClusterGroup({disableClusteringAtZoom: 16, chunkedLoading: true, maxClusterRadius: 45, spiderfyOnMaxZoom: false});
 const plain = L.layerGroup(); let heat = null;
@@ -98,15 +107,15 @@ const parcL = L.layerGroup();
 for (const [q, g] of Object.entries(V.parcelles || {})) {
   if (!BYQ[q]) continue;
   L.geoJSON({type: g.t, coordinates: g.c}, {style: {color: "#555", weight: 1, fillColor: "#999", fillOpacity: .06}, bubblingMouseEvents: false})
-    .on("click", e => { L.DomEvent.stopPropagation(e); L.popup({maxWidth: 360}).setLatLng(e.latlng).setContent(popupParc(q)).openOn(map); }).addTo(parcL);
+    .on("click", e => { L.DomEvent.stopPropagation(e); L.popup(PO()).setLatLng(e.latlng).setContent(popupParc(q)).openOn(map); }).addTo(parcL);
 }
 const syncParc = () => map.getZoom() >= 17 ? parcL.addTo(map) : map.removeLayer(parcL);
 map.on("zoomend", syncParc);
 // clic ailleurs : parcelle vendue la plus proche
 map.on("click", e => { let best = null, bd = 1e9;
   for (const q in BYQ) { const d = map.distance(e.latlng, BYQ[q][0].ll); if (d < bd) { bd = d; best = q; } }
-  const c = bd <= 40 ? popupParc(best, `Parcelle vendue la plus proche, à ${Math.round(bd)} m du clic`) : `Aucune vente connue depuis 2014 dans un rayon de 40 m (parcelle la plus proche à ${Math.round(bd)} m).`;
-  L.popup({maxWidth: 360}).setLatLng(bd <= 40 ? BYQ[best][0].ll : e.latlng).setContent(c).openOn(map); });
+  const c = bd <= 40 ? popupParc(best, `Parcelle vendue la plus proche, à ${Math.round(bd)} m du clic`) : wrap(`<div class="pop-t">Aucune vente connue depuis 2014 dans un rayon de 40 m (parcelle la plus proche à ${Math.round(bd)} m).</div>`);
+  L.popup(PO()).setLatLng(bd <= 40 ? BYQ[best][0].ll : e.latlng).setContent(c).openOn(map); });
 const $ = id => document.getElementById(id);
 function med(a) { if (!a.length) return null; a = a.slice().sort((x, y) => x - y); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; }
 let sortK = "d", sortD = -1;
@@ -123,7 +132,7 @@ function apply() {
     let ref = W[0], old = false; if (!ref) { if (!rem) continue; ref = S[0]; old = true; nRem++; }
     const o = old ? {radius: ref.t === "M" ? 7 : 5, color: "#777", weight: 2, dashArray: "3 3", fillColor: col(ref.p, ref.t), fillOpacity: .35, bubblingMouseEvents: false}
                   : {radius: ref.t === "M" ? 7 : 5, color: ref.t === "M" ? "#111" : "#fff", weight: ref.t === "M" ? 2 : 1, fillColor: col(ref.p, ref.t), fillOpacity: .9, bubblingMouseEvents: false};
-    const m = L.circleMarker(ref.ll, o).bindPopup(() => popupParc(q), {maxWidth: 360}); m.q = q; m.p = ref; mk.push(m);
+    const m = L.circleMarker(ref.ll, o).bindPopup(() => popupParc(q), PO()); m.q = q; m.p = ref; mk.push(m);
   }
   clu.clearLayers(); plain.clearLayers(); const tgt = $("clu").checked ? clu : plain;
   map.removeLayer(clu); map.removeLayer(plain); tgt.addLayers ? tgt.addLayers(mk) : mk.forEach(m => tgt.addLayer(m)); tgt.addTo(map);
@@ -140,7 +149,7 @@ function table() {
   const r = cur.slice().sort((a, b) => { const x = a[sortK], y = b[sortK]; return (x > y ? 1 : x < y ? -1 : 0) * sortD; }).slice(0, 400);
   $("tab").querySelector("tbody").innerHTML = r.map(p => `<tr data-q="${p.q}"><td>${dfr(p.d)}</td><td>${p.a}</td><td>${p.t}</td><td class="num">${p.s}</td><td class="num">${fmt(p.v)}</td><td class="num">${fmt(p.p)}</td></tr>`).join("");
 }
-$("tab").addEventListener("click", e => { const tr = e.target.closest("tr[data-q]"); if (tr) { const q = tr.dataset.q; map.setView(BYQ[q][0].ll, 18); document.body.classList.remove("open"); setTimeout(() => L.popup({maxWidth: 360}).setLatLng(BYQ[q][0].ll).setContent(popupParc(q)).openOn(map), 350); } });
+$("tab").addEventListener("click", e => { const tr = e.target.closest("tr[data-q]"); if (tr) { const q = tr.dataset.q; map.setView(BYQ[q][0].ll, 18); document.body.classList.remove("open"); setTimeout(() => L.popup(PO()).setLatLng(BYQ[q][0].ll).setContent(popupParc(q)).openOn(map), 350); } });
 document.querySelectorAll("th[data-k]").forEach(th => th.onclick = () => { const k = th.dataset.k; sortD = sortK === k ? -sortD : (k === "d" || k === "p" || k === "v" ? -1 : 1); sortK = k; table(); });
 $("csv").onclick = () => { const h = ["parcelle","date","annee","zone","adresse","adresse_approchee","type","surface_m2","prix_eur","eur_m2","vefa","lat","lon","source"];
   const L2 = cur.map(p => { const ll = {lat: p.ll[0], lng: p.ll[1]}; return [p.q, p.d, p.y, ZN[p.z], `"${p.a.replace(/"/g, '""')}"`, p.ax, p.t === "M" ? "Maison" : "Appartement", p.s, p.v, p.p, p.f, ll.lat, ll.lng, p.src === "C" ? "DVF+ Cerema" : "geo-dvf"].join(","); });

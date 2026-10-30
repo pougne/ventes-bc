@@ -10,7 +10,7 @@ Ouvrir le lien ci-dessus, sur ordinateur ou sur téléphone. Sur mobile, **☰ F
 
 ## Données
 
-Jeu nettoyé (une maison ou un appartement par vente, doublons et prix aberrants retirés), embarqué dans `ventes.js`. Bilan du 30/10/2026 : 7 788 ventes, 2014–2025 (`bilan.json`).
+Jeu nettoyé (une maison ou un appartement par vente, doublons et prix aberrants retirés), embarqué dans `ventes.js`. Bilan du 30/10/2026 : 11 642 ventes, 2014–2025 (`bilan.json`).
 
 Sources en **Licence Ouverte** :
 

@@ -1,6 +1,6 @@
 {
  "genere_le": "30/10/2026",
- "n": 7788,
+ "n": 11642,
  "annees": [
   2014,
   2025
@@ -13,10 +13,10 @@
   "gardees": 13126
  },
  "par_source": {
-  "DVF+ Cerema": 4854,
-  "geo-dvf": 2934
+  "DVF+ Cerema": 7220,
+  "geo-dvf": 4422
  },
- "approx": 854,
+ "approx": 1067,
  "cles": {
   "d": "date",
   "y": "année",
@@ -32,6 +32,6 @@
   "src": "G geo-dvf / C DVF+ Cerema",
   "q": "id parcelle cadastrale"
  },
- "parcelles": 1666,
+ "parcelles": 2282,
  "sans_parcelle": 0
 }

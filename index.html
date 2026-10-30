@@ -24,11 +24,18 @@ td{padding:3px;border-bottom:1px solid #eee}tr:hover td{background:#fff6d5;curso
 .pop-x{font-size:15px;font-weight:600;padding:8px 18px;min-height:40px;border-radius:20px}
 @media(max-width:800px){.leaflet-popup-content{font-size:12.5px;max-height:48vh;max-height:min(48vh,calc(100dvh - 200px))}.hist{font-size:11.5px}.hist td{padding:2px 3px}}
 .btn{position:absolute;z-index:1000;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:6px;padding:6px 10px;font-weight:600}
-@media(max-width:800px){#side{position:absolute;z-index:1100;left:0;top:0;bottom:0;width:88vw;transform:translateX(-100%);transition:transform .2s;box-shadow:2px 0 8px #0003}
- body.open #side{transform:none}#tog{display:block;left:10px;top:84px}#map{width:100vw;height:100vh;height:100dvh}}
+#side-x{display:none;position:sticky;top:0;float:right;z-index:5;width:44px;height:44px;margin:-4px -4px 8px 8px;border:1px solid #ccc;border-radius:22px;background:#fff;font:28px/42px system-ui,sans-serif;text-align:center;box-shadow:0 1px 4px #0002;cursor:pointer}
+@media(max-width:800px){#side{position:absolute;z-index:1100;left:0;top:0;bottom:0;width:88vw;transform:translateX(-100%);transition:transform .2s;box-shadow:2px 0 8px #0003;padding-top:8px}
+ body.open #side{transform:none}#side-x{display:block}#tog{display:block;left:10px;top:84px}body.open #tog{display:none}#map{width:100vw;height:100vh;height:100dvh}}
 #loc{display:block;right:10px;top:10px}
+#sidex{display:none}@media(max-width:800px){#sidex{display:block;position:sticky;top:0;float:right;margin:-4px -6px 0 8px;width:44px;height:44px;border-radius:50%;font:28px/40px system-ui,sans-serif;padding:0;background:#fff;box-shadow:0 1px 4px #0004;z-index:5}body.open #tog{display:none}}
+.dpe{display:inline-block;min-width:18px;height:18px;line-height:18px;padding:0 3px;border-radius:3px;font-weight:700;font-size:12px;text-align:center;color:#fff;vertical-align:1px}
+.dpe.sm{min-width:15px;height:15px;line-height:15px;font-size:10.5px;padding:0 2px}.dpe.ax{opacity:.75;outline:1px dashed #555;outline-offset:1px}
+.dpe-A{background:#009c6d}.dpe-B{background:#52b153}.dpe-C{background:#a5cc74;color:#222}.dpe-D{background:#f4e70f;color:#222}.dpe-E{background:#f0b40f;color:#222}.dpe-F{background:#eb8235}.dpe-G{background:#d7221f}
+.dpe-l{margin-top:6px;padding:5px 6px;background:#f6f8fa;border-radius:6px}.fd label{display:inline-block;margin:2px 6px 2px 0}
 </style></head><body>
 <div id="side">
+<button id="sidex" type="button" aria-label="Fermer les filtres" onclick="document.body.classList.remove('open')">×</button>
 <h1>Ventes DVF nettoyées</h1>
 <div class="sub" id="meta"></div>
 <h2>Années</h2>
@@ -48,13 +55,18 @@ td{padding:3px;border-bottom:1px solid #eee}tr:hover td{background:#fff6d5;curso
 <div class="row" style="margin-top:4px">€/m² <input type="number" id="pmin" placeholder="min" step="500"> à <input type="number" id="pmax" placeholder="max" step="500"></div>
 <label style="margin-top:6px"><input type="checkbox" id="rem" checked> <b>Remonter si vide</b> : une parcelle sans vente dans la fenêtre affiche sa dernière vente plus ancienne (jusqu'à 2014)</label>
 <label><input type="checkbox" id="vefa" checked> Inclure le neuf (VEFA)</label>
-<label><input type="checkbox" id="heat"> Fond heat map (densité des ventes)</label>
+<h2>DPE (ADEME)</h2>
+<div class="fd"><label><input type="checkbox" class="fdpe" value="A" checked> <span class="dpe dpe-A">A</span></label><label><input type="checkbox" class="fdpe" value="B" checked> <span class="dpe dpe-B">B</span></label><label><input type="checkbox" class="fdpe" value="C" checked> <span class="dpe dpe-C">C</span></label><label><input type="checkbox" class="fdpe" value="D" checked> <span class="dpe dpe-D">D</span></label><label><input type="checkbox" class="fdpe" value="E" checked> <span class="dpe dpe-E">E</span></label><label><input type="checkbox" class="fdpe" value="F" checked> <span class="dpe dpe-F">F</span></label><label><input type="checkbox" class="fdpe" value="G" checked> <span class="dpe dpe-G">G</span></label><label><input type="checkbox" class="fdpe" value="-" checked> sans DPE</label></div>
+<label><input type="checkbox" id="dstrict"> DPE fiables seulement (match strict, sans approximation)</label>
+<label><input type="checkbox" id="cdpe"> Colorer les points par DPE (au lieu du €/m²)</label>
+<div class="sub">DPE open data ADEME (logements existants, depuis juillet 2021), rapproché de chaque vente par adresse, surface (±15 %) et type. Ce n’est pas le DPE de l’acte : pastille à bord pointillé = approximation (plusieurs logements possibles, voisinage ou DPE de l’immeuble). Pas d’étiquette quand aucun DPE fiable n’est trouvé. Le DPE peut être postérieur à la vente (travaux possibles entre-temps).</div>
+<label style="margin-top:6px"><input type="checkbox" id="heat"> Fond heat map (densité des ventes)</label>
 <label><input type="checkbox" id="clu" checked> Regrouper les points (clusters)</label>
 <div class="stat" id="stat"></div>
-<div class="leg sub" style="margin-top:8px">Couleur €/m² (maisons 6 à 11 k€, appartements 4,5 à 8 k€) : <i style="background:#1a9850"></i>bas <i style="background:#fee08b"></i>moyen <i style="background:#d73027"></i>haut. Gros point cerclé de noir = maison, petit point = appartement. Point pâle à bord gris pointillé = dernière vente hors fenêtre (remontée). Un point = une parcelle ; clic = tout son historique. Au zoom 17+, les parcelles vendues sont cliquables ; un clic ailleurs ouvre la parcelle vendue la plus proche (40 m max).</div>
+<div class="leg sub" style="margin-top:8px">Couleur €/m² (ou DPE si l’option est cochée ; gris = sans DPE) (maisons 6 à 11 k€, appartements 4,5 à 8 k€) : <i style="background:#1a9850"></i>bas <i style="background:#fee08b"></i>moyen <i style="background:#d73027"></i>haut. Gros point cerclé de noir = maison, petit point = appartement. Point pâle à bord gris pointillé = dernière vente hors fenêtre (remontée). Un point = une parcelle ; clic = tout son historique. Au zoom 17+, les parcelles vendues sont cliquables ; un clic ailleurs ouvre la parcelle vendue la plus proche (40 m max).</div>
 <h2>Liste <button id="csv" style="float:right">Exporter CSV</button></h2>
 <div class="sub">Clic sur une ligne : zoom sur la vente. 400 premières lignes affichées.</div>
-<table id="tab"><thead><tr><th data-k="d">Date</th><th data-k="a">Adresse</th><th data-k="t">T</th><th data-k="s" class="num">m²</th><th data-k="v" class="num">Prix</th><th data-k="p" class="num">€/m²</th></tr></thead><tbody></tbody></table>
+<table id="tab"><thead><tr><th data-k="d">Date</th><th data-k="a">Adresse</th><th data-k="t">T</th><th data-k="s" class="num">m²</th><th data-k="v" class="num">Prix</th><th data-k="p" class="num">€/m²</th><th data-k="dpe">DPE</th></tr></thead><tbody></tbody></table>
 </div>
 <div id="map"></div><button id="tog" class="btn">☰ Filtres</button><button id="loc" class="btn">◎ Ma position</button>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -65,7 +77,7 @@ td{padding:3px;border-bottom:1px solid #eee}tr:hover td{background:#fff6d5;curso
 const V = window.VENTES, F = V.features, M = V.meta;
 const fmt = n => n == null ? "n.d." : Math.round(n).toLocaleString("fr-FR");
 const ZN = {bac: "Quartier Bac", ouest: "Ouest mairie BC", bc: "Reste de Bois-Colombes", frange: "BC nord / frange Agnettes"};
-document.getElementById("meta").innerHTML = `${fmt(M.n)} ventes, ${M.annees[0]} à ${M.annees[1]}, une maison ou un appartement par vente, doublons et prix aberrants retirés. Données DGFiP (DVF) via geo-dvf (Etalab), DVF+ open-data (Cerema) et fichier DVF brut 2026 S1${M.date_max ? ` (dernière vente : ${M.date_max.split("-").reverse().join("/")})` : ""}. Généré le ${M.genere_le}.`;
+document.getElementById("meta").innerHTML = `${fmt(M.n)} ventes, ${M.annees[0]} à ${M.annees[1]}, une maison ou un appartement par vente, doublons et prix aberrants retirés. Données DGFiP (DVF) via geo-dvf (Etalab), DVF+ open-data (Cerema) et fichier DVF brut 2026 S1${M.date_max ? ` (dernière vente : ${M.date_max.split("-").reverse().join("/")})` : ""}. Généré le ${M.genere_le}.` + (M.dpe ? ` DPE : ${fmt(M.dpe.match_strict + M.dpe.match_approx + M.dpe.match_immeuble)} ventes avec une étiquette ADEME rapprochée (dont ${fmt(M.dpe.match_strict)} en match strict), indicative et non garantie pour chaque vente.` : "");
 const map = L.map("map", {preferCanvas: true}).setView([48.9155, 2.2735], 15);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© OpenStreetMap"}).addTo(map);
 const ZS = {"Quartier Bac": "#4a148c", "Ouest mairie BC": "#1b5e20", "Frange Agnettes / BC nord": "#424242", "Reste de Bois-Colombes": "#000"};
@@ -78,6 +90,22 @@ const PO = () => ({maxWidth: Math.min(360, window.innerWidth - 56), minWidth: Ma
   autoPanPaddingTopLeft: [12, window.innerWidth <= 800 ? 96 : 70], autoPanPaddingBottomRight: [12, 40]});
 const wrap = h => h + `<div class="pop-f"><button class="pop-x" onclick="map.closePopup()">× Fermer</button></div>`;
 const dfr = d => d.split("-").reverse().join("/");
+const DA = V.dpeA || {};
+const pas = (e, sm, ax) => e ? `<span class="dpe dpe-${e}${sm ? " sm" : ""}${ax ? " ax" : ""}">${e}</span>` : "";
+const DCOL = {A: "#009c6d", B: "#52b153", C: "#a5cc74", D: "#f4e70f", E: "#f0b40f", F: "#eb8235", G: "#d7221f"};
+function dpeLigne(p) {
+  if (!p.dpe) return `<div class="dpe-l"><b>DPE</b> : non identifié pour ce logement${p.dpe_n ? ` (${p.dpe_n} DPE à l’adresse, aucun compatible en type et surface)` : " (aucun DPE ADEME à l’adresse)"}.</div>`;
+  const apres = p.dpe_d > p.d ? " (après la vente)" : "";
+  const nat = p.dpe_ax === 2 ? `<div class="approx">Approximation : DPE de l’immeuble collectif, pas du logement vendu.</div>`
+    : p.dpe_ax === 1 ? `<div class="approx">Approximation : rapprochement adresse / surface${p.dpe_n > 1 ? " parmi plusieurs logements" : " ou voisinage (25 m)"}, pas forcément ce logement.</div>`
+    : `<div class="approx">Même adresse, même type, surface proche : très probablement ce logement, mais non lié à l’acte.</div>`;
+  return `<div class="dpe-l"><b>DPE : ${pas(p.dpe, 0, p.dpe_ax)}</b>${p.dpe_g ? ` · GES ${pas(p.dpe_g, 1)}` : ""} · établi le ${dfr(p.dpe_d)}${apres}${p.dpe_s ? ` · ${p.dpe_s} m²` : ""}${nat}</div>`;
+}
+function dpeAdr(adrs) {
+  const r = adrs.filter(a => DA[a]).map(a => { const [c, m] = DA[a], n = [...c.matchAll(/([A-G])(\d+)/g)];
+    return `<div>${adrs.length > 1 ? a.replace(/ 92\d{3}.*/, "") + " : " : ""}${n.map(x => `${pas(x[1], 1)}×${x[2]}`).join(" ")} <span class="approx">(${n.reduce((s, x) => s + +x[2], 0)} logement(s), dernier DPE ${m.split("-").reverse().join("/")})</span></div>`; });
+  return r.length ? `<div style="margin-top:6px">DPE à l’adresse (ADEME, tous logements) :</div>${r.join("")}` : "";
+}
 const BYQ = {}, BYA = {};
 F.forEach((f, i) => { const p = f.properties; p.i = i; p.ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]]; const q = p.q || ("pt" + i);
   p.q = q; (BYQ[q] = BYQ[q] || []).push(p); (BYA[p.a] = BYA[p.a] || new Set()).add(q); });
@@ -90,13 +118,14 @@ function popupParc(q, note) {
   let h = `<div class="pop-t">` + (note ? `<div class="approx">${note}</div>` : "") + `<b>${adrs.join("<br>")}</b>${last.ax ? ' <span class="approx">(adresse la plus proche)</span>' : ''}<br>`;
   h += `<span class="approx">Parcelle ${q.startsWith("pt") ? "inconnue" : q.slice(5, 8) === "000" ? q.slice(8, 10).replace(/^0/, "") + " " + +q.slice(10) : q} · ${ZN[last.z]} · position approximative (parcelle)</span></div>`;
   const ref = lw || last;
-  h += `<div style="margin-top:4px">${lw ? "Dernière vente dans la fenêtre" : `<span class="badge">Aucune vente ${Y0}–${Y1}</span> dernière vente connue`} :<br><b>${dfr(ref.d)} · ${ref.t === "M" ? "Maison" : "Appartement"}${ref.f ? " (VEFA)" : ""} · ${ref.s} m² · ${fmt(ref.v)} € · ${fmt(ref.p)} €/m²</b></div>`;
+  h += `<div style="margin-top:4px">${lw ? "Dernière vente dans la fenêtre" : `<span class="badge">Aucune vente ${Y0}–${Y1}</span> dernière vente connue`} :<br><b>${dfr(ref.d)} · ${ref.t === "M" ? "Maison" : "Appartement"}${ref.f ? " (VEFA)" : ""} · ${ref.s} m² · ${fmt(ref.v)} € · ${fmt(ref.p)} €/m²</b></div>` + dpeLigne(ref);
   h += `<div style="margin-top:6px">Historique complet de la parcelle (${a.length} vente${a.length > 1 ? "s" : ""}, depuis 2014) :</div><table class="hist">` +
-    a.map(p => `<tr class="${inW(p) ? "in" : "out"}"><td>${dfr(p.d)}</td><td>${p.t}${p.f ? "·neuf" : ""}</td><td class="num">${p.s} m²</td><td class="num">${fmt(p.v)} €</td><td class="num">${fmt(p.p)} €/m²</td>${adrs.length > 1 ? `<td class="approx">${p.a.replace(/ 92\d{3}.*/, "")}</td>` : ""}</tr>`).join("") + "</table>";
+    a.map(p => `<tr class="${inW(p) ? "in" : "out"}"><td>${dfr(p.d)}</td><td>${p.t}${p.f ? "·neuf" : ""}</td><td class="num">${p.s} m²</td><td class="num">${fmt(p.v)} €</td><td class="num">${fmt(p.p)} €/m²</td><td>${pas(p.dpe, 1, p.dpe_ax)}</td>${adrs.length > 1 ? `<td class="approx">${p.a.replace(/ 92\d{3}.*/, "")}</td>` : ""}</tr>`).join("") + "</table>";
+  h += dpeAdr(adrs);
   const oth = [...new Set(adrs.flatMap(x => [...BYA[x]]))].filter(x => x !== q);
   if (oth.length) h += `<div style="margin-top:6px">Même adresse, autre(s) parcelle(s) :</div><table class="hist">` + oth.flatMap(o => BYQ[o]).sort((x, y) => x.d < y.d ? 1 : -1).slice(0, 15)
     .map(p => `<tr class="${inW(p) ? "in" : "out"}"><td>${dfr(p.d)}</td><td>${p.t}</td><td class="num">${p.s} m²</td><td class="num">${fmt(p.v)} €</td><td class="num">${fmt(p.p)} €/m²</td></tr>`).join("") + "</table>";
-  h += `<div class="approx" style="margin-top:4px">Source : ${[...new Set(a.map(p => p.src === "C" ? "DVF+ Cerema" : p.src === "D" ? "DVF DGFiP" : "geo-dvf"))].join(", ")} · en gras = dans la fenêtre ${Y0}–${Y1}</div>`;
+  h += `<div class="approx" style="margin-top:4px">Source : ${[...new Set(a.map(p => p.src === "C" ? "DVF+ Cerema" : p.src === "D" ? "DVF DGFiP" : "geo-dvf"))].join(", ")} · en gras = dans la fenêtre ${Y0}–${Y1}${a.some(p => p.dpe || p.dpe_n) ? " · DPE : open data ADEME, rapprochement adresse / surface (bord pointillé = approximation)" : ""}</div>`;
   return wrap(h);
 }
 const clu = L.markerClusterGroup({disableClusteringAtZoom: 16, chunkedLoading: true, maxClusterRadius: 45, spiderfyOnMaxZoom: false});
@@ -123,15 +152,18 @@ let cur = [], nRem = 0;
 function apply() {
   let y0 = +$("y0").value, y1 = +$("y1").value; if (y0 > y1) [y0, y1] = [y1, y0]; Y0 = y0; Y1 = y1; $("ylab").textContent = `${y0} à ${y1}`;
   const T = [...document.querySelectorAll(".ft:checked")].map(e => e.value), Z = [...document.querySelectorAll(".fz:checked")].map(e => e.value);
+  const DP = [...document.querySelectorAll(".fdpe:checked")].map(e => e.value), dAll = DP.length === 8, dst = $("dstrict").checked, cd = $("cdpe").checked;
+  const dE = p => p.dpe && (!dst || p.dpe_ax === 0) ? p.dpe : null; // « fiables seulement » : une étiquette approchée compte comme « sans DPE »
+  const okD = p => dAll || (dE(p) ? DP.includes(dE(p)) : DP.includes("-"));
   const smin = +$("smin").value || 0, pmin = +$("pmin").value || 0, pmax = +$("pmax").value || 1e9, vefa = $("vefa").checked, rem = $("rem").checked;
-  const ok = p => T.includes(p.t) && Z.includes(p.z) && p.s >= smin && p.p >= pmin && p.p <= pmax && (vefa || !p.f);
+  const ok = p => T.includes(p.t) && Z.includes(p.z) && p.s >= smin && p.p >= pmin && p.p <= pmax && (vefa || !p.f) && okD(p);
   cur = []; mk.length = 0; nRem = 0;
   for (const q in BYQ) {
     const S = BYQ[q].filter(ok); if (!S.length) continue;
     const W = S.filter(inW); W.forEach(p => cur.push(p));
     let ref = W[0], old = false; if (!ref) { if (!rem) continue; ref = S[0]; old = true; nRem++; }
-    const o = old ? {radius: ref.t === "M" ? 7 : 5, color: "#777", weight: 2, dashArray: "3 3", fillColor: col(ref.p, ref.t), fillOpacity: .35, bubblingMouseEvents: false}
-                  : {radius: ref.t === "M" ? 7 : 5, color: ref.t === "M" ? "#111" : "#fff", weight: ref.t === "M" ? 2 : 1, fillColor: col(ref.p, ref.t), fillOpacity: .9, bubblingMouseEvents: false};
+    const o = old ? {radius: ref.t === "M" ? 7 : 5, color: "#777", weight: 2, dashArray: "3 3", fillColor: cd ? (DCOL[dE(ref)] || "#bbb") : col(ref.p, ref.t), fillOpacity: .35, bubblingMouseEvents: false}
+                  : {radius: ref.t === "M" ? 7 : 5, color: ref.t === "M" ? "#111" : "#fff", weight: ref.t === "M" ? 2 : 1, fillColor: cd ? (DCOL[dE(ref)] || "#bbb") : col(ref.p, ref.t), fillOpacity: .9, bubblingMouseEvents: false};
     const m = L.circleMarker(ref.ll, o).bindPopup(() => popupParc(q), PO()); m.q = q; m.p = ref; mk.push(m);
   }
   clu.clearLayers(); plain.clearLayers(); const tgt = $("clu").checked ? clu : plain;
@@ -146,16 +178,18 @@ function apply() {
   table();
 }
 function table() {
-  const r = cur.slice().sort((a, b) => { const x = a[sortK], y = b[sortK]; return (x > y ? 1 : x < y ? -1 : 0) * sortD; }).slice(0, 400);
-  $("tab").querySelector("tbody").innerHTML = r.map(p => `<tr data-q="${p.q}"><td>${dfr(p.d)}</td><td>${p.a}</td><td>${p.t}</td><td class="num">${p.s}</td><td class="num">${fmt(p.v)}</td><td class="num">${fmt(p.p)}</td></tr>`).join("");
+  const r = cur.slice().sort((a, b) => { const x = a[sortK] ?? "Z", y = b[sortK] ?? "Z"; return (x > y ? 1 : x < y ? -1 : 0) * sortD; }).slice(0, 400);
+  $("tab").querySelector("tbody").innerHTML = r.map(p => `<tr data-q="${p.q}"><td>${dfr(p.d)}</td><td>${p.a}</td><td>${p.t}</td><td class="num">${p.s}</td><td class="num">${fmt(p.v)}</td><td class="num">${fmt(p.p)}</td><td>${pas(p.dpe, 1, p.dpe_ax)}</td></tr>`).join("");
 }
 $("tab").addEventListener("click", e => { const tr = e.target.closest("tr[data-q]"); if (tr) { const q = tr.dataset.q; map.setView(BYQ[q][0].ll, 18); document.body.classList.remove("open"); setTimeout(() => L.popup(PO()).setLatLng(BYQ[q][0].ll).setContent(popupParc(q)).openOn(map), 350); } });
 document.querySelectorAll("th[data-k]").forEach(th => th.onclick = () => { const k = th.dataset.k; sortD = sortK === k ? -sortD : (k === "d" || k === "p" || k === "v" ? -1 : 1); sortK = k; table(); });
-$("csv").onclick = () => { const h = ["parcelle","date","annee","zone","adresse","adresse_approchee","type","surface_m2","prix_eur","eur_m2","vefa","lat","lon","source"];
-  const L2 = cur.map(p => { const ll = {lat: p.ll[0], lng: p.ll[1]}; return [p.q, p.d, p.y, ZN[p.z], `"${p.a.replace(/"/g, '""')}"`, p.ax, p.t === "M" ? "Maison" : "Appartement", p.s, p.v, p.p, p.f, ll.lat, ll.lng, p.src === "C" ? "DVF+ Cerema" : p.src === "D" ? "DVF DGFiP" : "geo-dvf"].join(","); });
+$("csv").onclick = () => { const h = ["parcelle","date","annee","zone","adresse","adresse_approchee","type","surface_m2","prix_eur","eur_m2","vefa","lat","lon","source","dpe_ademe","ges","dpe_date","dpe_surface_m2","dpe_approx_0strict_1approx_2immeuble","nb_dpe_adresse"];
+  const L2 = cur.map(p => { const ll = {lat: p.ll[0], lng: p.ll[1]}; return [p.q, p.d, p.y, ZN[p.z], `"${p.a.replace(/"/g, '""')}"`, p.ax, p.t === "M" ? "Maison" : "Appartement", p.s, p.v, p.p, p.f, ll.lat, ll.lng, p.src === "C" ? "DVF+ Cerema" : p.src === "D" ? "DVF DGFiP" : "geo-dvf", p.dpe || "", p.dpe_g || "", p.dpe_d || "", p.dpe_s || "", p.dpe ? p.dpe_ax : "", p.dpe_n || 0].join(","); });
   const b = new Blob(["\ufeff" + h.join(",") + "\n" + L2.join("\n")], {type: "text/csv"}); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "ventes_filtrees.csv"; a.click(); };
 document.querySelectorAll("input").forEach(e => e.addEventListener(e.type === "range" || e.type === "number" ? "input" : "change", apply));
 $("tog").onclick = () => document.body.classList.toggle("open");
+$("sidex").onclick = () => document.body.classList.remove("open");
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.remove("open"); });
 let me = null;
 $("loc").onclick = () => map.locate({setView: true, maxZoom: 18, enableHighAccuracy: true});
 map.on("locationfound", e => { if (me) map.removeLayer(me); me = L.circleMarker(e.latlng, {radius: 8, color: "#fff", weight: 3, fillColor: "#1e88e5", fillOpacity: 1}).addTo(map); });

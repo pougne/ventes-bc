@@ -1,93 +1,159 @@
 <!DOCTYPE html>
-<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ventes DVF nettoyées : Bois-Colombes et quartier Bac</title>
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1f2a37">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Ventes BC">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
 <style>
-*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#222;display:flex;height:100vh;height:100dvh}
-#side{width:360px;overflow:auto;padding:12px 14px;border-right:1px solid #ddd;background:#fafafa}#map{flex:1}
-h1{font-size:17px;margin:0 0 4px}h2{font-size:13px;margin:14px 0 6px;text-transform:uppercase;letter-spacing:.04em;color:#555}
-.sub{color:#666;font-size:12px}label{display:block;margin:3px 0;cursor:pointer}.row{display:flex;gap:8px;align-items:center}
-input[type=number]{width:90px;padding:3px}input[type=range]{width:100%}
-.stat{background:#fff;border:1px solid #e3e3e3;border-radius:8px;padding:8px 10px;margin-top:6px}.stat b{font-size:16px}
-button{padding:5px 10px;border:1px solid #bbb;background:#fff;border-radius:6px;cursor:pointer}button:hover{background:#f0f0f0}
-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}th{position:sticky;top:0;background:#eee;cursor:pointer;text-align:left;padding:3px}
-td{padding:3px;border-bottom:1px solid #eee}tr:hover td{background:#fff6d5;cursor:pointer}.num{text-align:right;white-space:nowrap}
-.leg i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:4px;vertical-align:-2px}
+:root{--ink:#1f2a37;--mut:#6b7280;--line:#e5e7eb;--bg:#f7f7f5;--acc:#2c6fa8;--sh:56px}
+*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);display:flex;height:100vh;height:100dvh;background:var(--bg)}
+#side{width:360px;flex:none;overflow:auto;padding:12px 14px 40px;border-right:1px solid var(--line);background:#fff}
+#mw{flex:1;position:relative;min-width:0}#map{position:absolute;inset:0;background:#eef0ee}
+h1{font-size:17px;margin:0 0 4px}h2{font-size:11.5px;margin:16px 0 6px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);font-weight:600}
+.sub{color:var(--mut);font-size:12px}label{display:block;margin:4px 0;cursor:pointer}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input[type=number]{width:90px;padding:4px 6px;border:1px solid var(--line);border-radius:6px;font:inherit}input[type=range]{width:100%;accent-color:var(--acc)}input[type=checkbox],input[type=radio]{accent-color:var(--acc)}
+.stat{background:#fafafa;border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:6px}.stat b{font-size:15px}
+button{padding:5px 10px;border:1px solid #d1d5db;background:#fff;border-radius:8px;cursor:pointer;font:inherit;color:inherit}button:hover{background:#f3f4f6}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}th{background:#f3f4f6;text-align:left;padding:3px;font-weight:600}
+td{padding:3px;border-bottom:1px solid #eee}.num{text-align:right;white-space:nowrap}
+.leg i{display:inline-block;width:12px;height:12px;border-radius:50%;margin:0 3px 0 6px;vertical-align:-2px;border:1px solid #0002}
 .leaflet-popup-content{font-size:13px}.approx{color:#888;font-size:11px}
-#tog,#loc{display:none}.hist{border-collapse:collapse;margin-top:4px;font-size:12px}.hist td{padding:2px 4px;border-bottom:1px solid #eee}.hist tr.in td{font-weight:600}.hist tr.out td{color:#666}
+.hist{border-collapse:collapse;margin-top:4px;font-size:12px}.hist td{padding:2px 4px;border-bottom:1px solid #eee}.hist tr.in td{font-weight:600}.hist tr.out td{color:#666}
 .badge{display:inline-block;background:#fff3cd;border:1px solid #e0c060;border-radius:4px;padding:0 4px;font-size:11px}.leaflet-popup-content{max-height:55vh;max-height:min(55vh,calc(100dvh - 190px));overflow:auto;margin:10px 12px 0 12px;-webkit-overflow-scrolling:touch}
+.leaflet-popup-content-wrapper{border-radius:12px}
 .leaflet-container a.leaflet-popup-close-button{width:40px;height:40px;top:4px;right:4px;font:30px/38px system-ui,-apple-system,sans-serif;color:#333;background:#fff;border-radius:50%;box-shadow:0 1px 4px #0005;text-align:center;z-index:20}
 .leaflet-container a.leaflet-popup-close-button:hover,.leaflet-container a.leaflet-popup-close-button:focus{color:#000;background:#eee}
 .pop-t{padding-right:40px;min-height:40px}.pop-f{position:sticky;bottom:0;background:#fff;padding:6px 0 8px;margin-top:6px;border-top:1px solid #eee;text-align:center}
 .pop-x{font-size:15px;font-weight:600;padding:8px 18px;min-height:40px;border-radius:20px}
+.pop-k{margin-top:4px;font-size:12.5px}.pop-a{margin-top:6px;display:flex;flex-wrap:wrap;gap:6px}.pop-a a{font-size:12px;text-decoration:none;color:var(--acc);border:1px solid #cfe0ef;background:#f3f8fc;border-radius:12px;padding:3px 9px;white-space:nowrap}
 @media(max-width:800px){.leaflet-popup-content{font-size:12.5px;max-height:48vh;max-height:min(48vh,calc(100dvh - 200px))}.hist{font-size:11.5px}.hist td{padding:2px 3px}}
-.btn{position:absolute;z-index:1000;background:#fff;border:2px solid rgba(0,0,0,.25);border-radius:6px;padding:6px 10px;font-weight:600}
-#side-x{display:none;position:sticky;top:0;float:right;z-index:5;width:44px;height:44px;margin:-4px -4px 8px 8px;border:1px solid #ccc;border-radius:22px;background:#fff;font:28px/42px system-ui,sans-serif;text-align:center;box-shadow:0 1px 4px #0002;cursor:pointer}
-@media(max-width:800px){#side{position:absolute;z-index:1100;left:0;top:0;bottom:0;width:88vw;transform:translateX(-100%);transition:transform .2s;box-shadow:2px 0 8px #0003;padding-top:8px}
- body.open #side{transform:none}#side-x{display:block}#tog{display:block;left:10px;top:84px}body.open #tog{display:none}#map{width:100vw;height:100vh;height:100dvh}}
-#loc{display:block;right:10px;top:10px}
-#sidex{display:none}@media(max-width:800px){#sidex{display:block;position:sticky;top:0;float:right;margin:-4px -6px 0 8px;width:44px;height:44px;border-radius:50%;font:28px/40px system-ui,sans-serif;padding:0;background:#fff;box-shadow:0 1px 4px #0004;z-index:5}body.open #tog{display:none}}
+/* barre flottante au-dessus de la carte */
+#bar{position:absolute;z-index:1000;top:10px;left:10px;right:10px;display:flex;gap:8px;align-items:flex-start;pointer-events:none}
+#bar>*{pointer-events:auto}.fab{height:44px;min-width:44px;padding:0 12px;border:0;border-radius:22px;background:#fff;box-shadow:0 1px 5px #0003;font-weight:600;font-size:15px;white-space:nowrap}
+.fab.on{background:var(--acc);color:#fff}.fab:hover{background:#f3f4f6}.fab.on:hover{background:#245d8d}
+#chip{flex:1;min-width:0;display:flex;justify-content:center}#chip>div{background:#fffffff2;box-shadow:0 1px 5px #0003;border-radius:16px;padding:5px 12px;font-size:12.5px;line-height:1.3;max-width:440px;text-align:center}
+#chip b{font-size:13.5px}#tog{display:none}
+#sidex{display:none}
+/* tiroir liste (bas de l'écran sur mobile, panneau flottant sur ordinateur) */
+#sheet{position:absolute;z-index:1050;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -2px 14px #0003;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
+#sh-h{padding:4px 12px 6px;cursor:pointer;flex:none}.grip{width:40px;height:5px;border-radius:3px;background:#d1d5db;margin:2px auto 6px}
+#sum{font-size:12.5px;line-height:1.35}#sum b{font-size:13.5px}.sh-c{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;overflow-x:auto;margin-top:6px;scrollbar-width:none}.sh-c>*{flex:none}#sheet.col #srt,#sheet.col #csv2{display:none}
+.seg{display:inline-flex;border:1px solid #d1d5db;border-radius:16px;overflow:hidden}.seg button{border:0;border-radius:0;padding:5px 10px;font-size:12.5px;min-height:32px}.seg button+button{border-left:1px solid #e5e7eb}
+.seg button.on{background:var(--ink);color:#fff}#rad{display:none}body.bal #rad{display:inline-flex}
+#list{overflow:auto;-webkit-overflow-scrolling:touch;border-top:1px solid var(--line);flex:1;min-height:0}
+#sheet.col #list{display:none}#sheet.half{height:46vh;height:46dvh}#sheet.full{height:86vh;height:86dvh}
+.it{display:grid;grid-template-columns:12px 1fr auto;gap:2px 8px;padding:8px 12px;border-bottom:1px solid #f1f1f1;cursor:pointer;align-items:center}.it:active,.it:hover{background:#f6f9fc}
+.it i{width:12px;height:12px;border-radius:50%;grid-row:span 2;border:1px solid #0002}.it .r{text-align:right;white-space:nowrap}.it .s{font-size:11.5px;color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(min-width:801px){#sheet{left:auto;right:12px;bottom:28px;width:400px;border-radius:14px;max-height:calc(100% - 80px)}#sheet.half{height:50%}#sheet.full{height:calc(100% - 80px)}.leaflet-bottom.leaflet-right{right:420px}}
+@media(max-width:800px){#side{position:absolute;z-index:1100;left:0;top:0;bottom:0;width:88vw;max-width:420px;transform:translateX(-100%);transition:transform .2s;box-shadow:2px 0 12px #0004}
+ body.open #side{transform:none}#tog{display:block}.fab span{display:none}.fab{padding:0 10px}
+ #sidex{display:block;position:sticky;top:0;float:right;margin:-4px -6px 0 8px;width:44px;height:44px;border-radius:50%;font:28px/40px system-ui,sans-serif;padding:0;background:#fff;box-shadow:0 1px 4px #0004;z-index:5}
+ .leaflet-bottom{bottom:var(--sh)}.leaflet-control-zoom{display:none}#chip>div{font-size:11.5px;padding:4px 9px}#chip b{font-size:12.5px}}
+/* pastilles de filtres */
+.pills{display:flex;flex-wrap:wrap;gap:6px}.pill{display:inline-flex;align-items:center;gap:6px;margin:0;padding:6px 11px;border:1px solid #d1d5db;border-radius:18px;background:#fff;font-size:13px;user-select:none;min-height:34px}
+.pill input{position:absolute;opacity:0;pointer-events:none;width:0;height:0}.pill.on{background:var(--ink);border-color:var(--ink);color:#fff}.pill .sw{width:11px;height:11px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #9ca3af}
+.tg{display:flex;gap:8px;align-items:flex-start;margin:6px 0}.tg input{margin-top:3px;flex:none}
+.zc{border:1px solid var(--line);border-radius:10px;padding:6px 8px;margin-top:6px}.zc .zt{display:flex;justify-content:space-between;font-size:12.5px;font-weight:600}.zc svg{display:block;width:100%;height:auto}
+#toast{position:fixed;z-index:3000;left:50%;top:64px;transform:translateX(-50%);background:#1f2a37;color:#fff;padding:8px 14px;border-radius:18px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none}#toast.v{opacity:.95}
 .dpe{display:inline-block;min-width:18px;height:18px;line-height:18px;padding:0 3px;border-radius:3px;font-weight:700;font-size:12px;text-align:center;color:#fff;vertical-align:1px}
 .dpe.sm{min-width:15px;height:15px;line-height:15px;font-size:10.5px;padding:0 2px}.dpe.ax{opacity:.75;outline:1px dashed #555;outline-offset:1px}
 .dpe-A{background:#009c6d}.dpe-B{background:#52b153}.dpe-C{background:#a5cc74;color:#222}.dpe-D{background:#f4e70f;color:#222}.dpe-E{background:#f0b40f;color:#222}.dpe-F{background:#eb8235}.dpe-G{background:#d7221f}
 .dpe-l{margin-top:6px;padding:5px 6px;background:#f6f8fa;border-radius:6px}.fd label{display:inline-block;margin:2px 6px 2px 0}
+#bm{position:absolute;z-index:1000;left:10px;bottom:12px;display:flex;gap:4px;background:#fffc;backdrop-filter:blur(6px);border-radius:8px;padding:3px;box-shadow:0 1px 4px #0003}
+#bm button{border:0;background:transparent;padding:5px 8px;border-radius:6px;font:600 11px/1.2 system-ui,sans-serif;color:#444;cursor:pointer}
+#bm button.on{background:#1f2a37;color:#fff}
+@media(max-width:800px){#bm{bottom:calc(28vh + 56px);left:8px}}
 </style></head><body>
 <div id="side">
-<button id="sidex" type="button" aria-label="Fermer les filtres" onclick="document.body.classList.remove('open')">×</button>
+<button id="sidex" type="button" aria-label="Fermer les filtres">×</button>
 <h1>Ventes DVF nettoyées</h1>
 <div class="sub" id="meta"></div>
-<h2>Années</h2>
-<div class="row"><span id="ylab"></span></div>
+<div class="row" style="margin-top:8px"><button id="share">Copier le lien</button><button id="csv">Exporter CSV</button></div>
+<h2>Années <span id="ylab" style="text-transform:none;letter-spacing:0;color:var(--ink);font-size:13px;margin-left:4px"></span></h2>
 <input type="range" id="y0" min="2010" max="2026" value="2021"><input type="range" id="y1" min="2010" max="2026" value="2026">
 <div class="sub">2010 à 2013 : pas de données ouvertes (DV3F réservé aux acteurs publics). 2014 à 2020 : DVF+ Cerema ; 2021 à 2025 : geo-dvf ; 2026 (ventes jusqu’au 30 juin) : DVF DGFiP brute.</div>
 <h2>Type</h2>
-<label><input type="checkbox" class="ft" value="M" checked> Maisons</label>
-<label><input type="checkbox" class="ft" value="A" checked> Appartements</label>
+<div class="pills"><label class="pill"><input type="checkbox" class="ft" value="M" checked>Maisons</label><label class="pill"><input type="checkbox" class="ft" value="A" checked>Appartements</label></div>
 <h2>Zone</h2>
-<label><input type="checkbox" class="fz" value="bac" checked> Quartier Bac (tracé Eric + bande Flachat / mairie)</label>
-<label><input type="checkbox" class="fz" value="ouest" checked> Ouest mairie BC (tracé Eric)</label>
-<label><input type="checkbox" class="fz" value="bc" checked> Reste de Bois-Colombes</label>
-<label><input type="checkbox" class="fz" value="frange" checked> BC nord / frange Agnettes</label>
+<div class="pills">
+<label class="pill" title="Tracé Eric + bande Flachat / mairie"><input type="checkbox" class="fz" value="bac" checked><span class="sw" style="background:#7c3aed"></span>Quartier Bac</label>
+<label class="pill" title="Tracé Eric"><input type="checkbox" class="fz" value="ouest" checked><span class="sw" style="background:#15803d"></span>Ouest mairie</label>
+<label class="pill"><input type="checkbox" class="fz" value="bc" checked><span class="sw" style="background:#374151"></span>Reste de BC</label>
+<label class="pill"><input type="checkbox" class="fz" value="frange" checked><span class="sw" style="background:#9ca3af"></span>BC nord / Agnettes</label>
+</div>
+<div class="sub" style="margin-top:4px">Quartier Bac = tracé Eric + bande Flachat / mairie ; Ouest mairie = tracé Eric.</div>
+<h2>Couleur des points</h2>
+<div class="pills"><label class="pill"><input type="radio" name="cm" value="rel" checked>vs médiane de zone</label><label class="pill"><input type="radio" name="cm" value="abs">€/m² absolu</label></div>
+<label class="tg"><input type="checkbox" id="eur"><span><b>Prix en € <span class="yr">2026</span></b> : ramène chaque €/m² au niveau de prix actuel (popup, liste, médianes)</span></label>
 <h2>Filtres</h2>
-<div class="row">Surface ≥ <input type="number" id="smin" value="0" step="10"> m²</div>
-<div class="row" style="margin-top:4px">€/m² <input type="number" id="pmin" placeholder="min" step="500"> à <input type="number" id="pmax" placeholder="max" step="500"></div>
-<label style="margin-top:6px"><input type="checkbox" id="rem" checked> <b>Remonter si vide</b> : une parcelle sans vente dans la fenêtre affiche sa dernière vente plus ancienne (jusqu'à 2014)</label>
-<label><input type="checkbox" id="vefa" checked> Inclure le neuf (VEFA)</label>
+<div class="row">Surface ≥ <input type="number" id="smin" value="0" step="10" inputmode="numeric"> m²</div>
+<div class="row" style="margin-top:4px">€/m² <input type="number" id="pmin" placeholder="min" step="500" inputmode="numeric"> à <input type="number" id="pmax" placeholder="max" step="500" inputmode="numeric"></div>
+<label class="tg"><input type="checkbox" id="rem" checked><span><b>Remonter si vide</b> : une parcelle sans vente dans la fenêtre affiche sa dernière vente plus ancienne (jusqu'à 2014)</span></label>
+<label class="tg"><input type="checkbox" id="vefa" checked><span>Inclure le neuf (VEFA)</span></label>
 <h2>DPE (ADEME)</h2>
 <div class="fd"><label><input type="checkbox" class="fdpe" value="A" checked> <span class="dpe dpe-A">A</span></label><label><input type="checkbox" class="fdpe" value="B" checked> <span class="dpe dpe-B">B</span></label><label><input type="checkbox" class="fdpe" value="C" checked> <span class="dpe dpe-C">C</span></label><label><input type="checkbox" class="fdpe" value="D" checked> <span class="dpe dpe-D">D</span></label><label><input type="checkbox" class="fdpe" value="E" checked> <span class="dpe dpe-E">E</span></label><label><input type="checkbox" class="fdpe" value="F" checked> <span class="dpe dpe-F">F</span></label><label><input type="checkbox" class="fdpe" value="G" checked> <span class="dpe dpe-G">G</span></label><label><input type="checkbox" class="fdpe" value="-" checked> sans DPE</label></div>
-<label><input type="checkbox" id="dstrict"> DPE fiables seulement (match strict, sans approximation)</label>
-<label><input type="checkbox" id="cdpe"> Colorer les points par DPE (au lieu du €/m²)</label>
+<label class="tg"><input type="checkbox" id="dstrict"><span>DPE fiables seulement (match strict, sans approximation)</span></label>
+<label class="tg"><input type="checkbox" id="cdpe"><span>Colorer les points par DPE (au lieu du €/m²)</span></label>
 <div class="sub">DPE open data ADEME (logements existants, depuis juillet 2021), rapproché de chaque vente par adresse, surface (±15 %) et type. Ce n’est pas le DPE de l’acte : pastille à bord pointillé = approximation (plusieurs logements possibles, voisinage ou DPE de l’immeuble). Pas d’étiquette quand aucun DPE fiable n’est trouvé. Le DPE peut être postérieur à la vente (travaux possibles entre-temps).</div>
-<label style="margin-top:6px"><input type="checkbox" id="heat"> Fond heat map (densité des ventes)</label>
-<label><input type="checkbox" id="clu" checked> Regrouper les points (clusters)</label>
+<h2>Affichage</h2>
+<label class="tg"><input type="checkbox" id="heat"><span>Fond heat map (densité des ventes)</span></label>
+<label class="tg"><input type="checkbox" id="clu" checked><span>Regrouper les points (clusters)</span></label>
 <div class="stat" id="stat"></div>
-<div class="leg sub" style="margin-top:8px">Couleur €/m² (ou DPE si l’option est cochée ; gris = sans DPE) (maisons 6 à 11 k€, appartements 4,5 à 8 k€) : <i style="background:#1a9850"></i>bas <i style="background:#fee08b"></i>moyen <i style="background:#d73027"></i>haut. Gros point cerclé de noir = maison, petit point = appartement. Point pâle à bord gris pointillé = dernière vente hors fenêtre (remontée). Un point = une parcelle ; clic = tout son historique. Au zoom 17+, les parcelles vendues sont cliquables ; un clic ailleurs ouvre la parcelle vendue la plus proche (40 m max).</div>
-<h2>Liste <button id="csv" style="float:right">Exporter CSV</button></h2>
-<div class="sub">Clic sur une ligne : zoom sur la vente. 400 premières lignes affichées.</div>
-<table id="tab"><thead><tr><th data-k="d">Date</th><th data-k="a">Adresse</th><th data-k="t">T</th><th data-k="s" class="num">m²</th><th data-k="v" class="num">Prix</th><th data-k="p" class="num">€/m²</th><th data-k="dpe">DPE</th></tr></thead><tbody></tbody></table>
+<div class="leg sub" id="leg" style="margin-top:8px"></div>
+<h2>Évolution par zone</h2>
+<div class="sub">Médiane €/m² par an (nominale), filtres type / surface / VEFA / DPE appliqués, toutes années. Barres = nombre de ventes par an ; année sans point = moins de 10 ventes. Bande grise = fenêtre choisie.</div>
+<div id="fiche"></div>
 </div>
-<div id="map"></div><button id="tog" class="btn">☰ Filtres</button><button id="loc" class="btn">◎ Ma position</button>
+<div id="mw"><div id="map"></div><div id="bm" role="group" aria-label="Fond de carte"><button type="button" data-bm="ign" class="on">Plan IGN</button><button type="button" data-bm="clair">Clair</button><button type="button" data-bm="ortho">Photo</button></div>
+<div id="bar"><button id="tog" class="fab" aria-label="Filtres">☰<span> Filtres</span></button><div id="chip"></div><button id="loc" class="fab" title="Ma position" aria-label="Ma position">◎<span> Ma position</span></button><button id="bal" class="fab" title="Mode balade : stats dans un rayon" aria-label="Mode balade">🚶<span> Balade</span></button></div>
+<div id="sheet" class="col"><div id="sh-h"><div class="grip"></div><div id="sum"></div>
+<div class="sh-c"><div class="seg" id="rad"><button data-r="100">100 m</button><button data-r="250" class="on">250 m</button><button data-r="500">500 m</button></div>
+<div class="seg" id="srt"><button data-k="d" class="on">Date</button><button data-k="p">€/m²</button><button data-k="x">Distance</button><button data-k="dpe">DPE</button></div>
+<button id="csv2" title="Exporter la liste (rayon ou zone visible)">CSV</button></div></div>
+<div id="list"></div></div>
+</div>
+<div id="toast"></div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
 <script src="ventes.js"></script>
 <script>
 const V = window.VENTES, F = V.features, M = V.meta;
+const $ = id => document.getElementById(id);
 const fmt = n => n == null ? "n.d." : Math.round(n).toLocaleString("fr-FR");
 const ZN = {bac: "Quartier Bac", ouest: "Ouest mairie BC", bc: "Reste de Bois-Colombes", frange: "BC nord / frange Agnettes"};
+const NMIN = 10; // seuil de fiabilité des médianes (zone, rayon, zone visible, courbes)
+const YA = M.annees[0], YR = M.annees[1]; // années couvertes ; YR = année de référence des « € d'aujourd'hui »
+document.querySelectorAll(".yr").forEach(e => e.textContent = YR);
 document.getElementById("meta").innerHTML = `${fmt(M.n)} ventes, ${M.annees[0]} à ${M.annees[1]}, une maison ou un appartement par vente, doublons et prix aberrants retirés. Données DGFiP (DVF) via geo-dvf (Etalab), DVF+ open-data (Cerema) et fichier DVF brut 2026 S1${M.date_max ? ` (dernière vente : ${M.date_max.split("-").reverse().join("/")})` : ""}. Généré le ${M.genere_le}.` + (M.dpe ? ` DPE : ${fmt(M.dpe.match_strict + M.dpe.match_approx + M.dpe.match_immeuble)} ventes avec une étiquette ADEME rapprochée (dont ${fmt(M.dpe.match_strict)} en match strict), indicative et non garantie pour chaque vente.` : "");
-const map = L.map("map", {preferCanvas: true}).setView([48.9155, 2.2735], 15);
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© OpenStreetMap"}).addTo(map);
-const ZS = {"Quartier Bac": "#4a148c", "Ouest mairie BC": "#1b5e20", "Frange Agnettes / BC nord": "#424242", "Reste de Bois-Colombes": "#000"};
-for (const [n, g] of Object.entries(V.zones)) L.geoJSON(g, {interactive: false, style: {color: ZS[n], weight: n.startsWith("Reste") ? 2.5 : 3, fill: false, dashArray: n.startsWith("Frange") ? "6 4" : null}}).addTo(map);
-function col(p, t) { const [a, b] = t === "M" ? [6000, 11000] : [4500, 8000]; let x = Math.max(0, Math.min(1, (p - a) / (b - a)));
-  const s = [[26,152,80],[145,207,96],[254,224,139],[252,141,89],[215,48,39]]; const i = Math.min(3, Math.floor(x * 4)), f = x * 4 - i;
-  const c = s[i].map((v, k) => Math.round(v + (s[i + 1][k] - v) * f)); return `rgb(${c})`; }
-// options communes des popups : largeur adaptée au téléphone, recentrage en laissant la place aux boutons et à la barre Safari
+const map = L.map("map", {preferCanvas: true, zoomControl: false}).setView([48.9155, 2.2735], 15);
+L.control.zoom({position: "bottomright"}).addTo(map);
+const BM = {
+  ign: L.tileLayer("https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&FORMAT=image/png&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}", {maxZoom: 19, attribution: "© IGN · Géoplateforme", className: "bm-tl"}),
+  clair: L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, className: "bm-tl", attribution: "© OpenStreetMap"}),
+  ortho: L.tileLayer("https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}", {maxZoom: 19, attribution: "© IGN Ortho", className: "bm-tl"})
+};
+let curBm = BM.ign.addTo(map);
+document.getElementById("bm").onclick = e => {
+  const b = e.target.closest("button[data-bm]"); if (!b) return;
+  const k = b.dataset.bm; if (!BM[k]) return;
+  map.removeLayer(curBm); curBm = BM[k].addTo(map);
+  document.querySelectorAll("#bm button").forEach(x => x.classList.toggle("on", x === b));
+};
+const ZS = {"Quartier Bac": "#7c3aed", "Ouest mairie BC": "#15803d", "Frange Agnettes / BC nord": "#6b7280", "Reste de Bois-Colombes": "#374151"};
+for (const [n, g] of Object.entries(V.zones)) L.geoJSON(g, {interactive: false, style: {color: ZS[n] || "#333", weight: n.startsWith("Reste") ? 2 : 2.5, opacity: .85, fill: false, dashArray: n.startsWith("Frange") ? "6 4" : null}}).addTo(map);
+// palette douce et lisible (bleu = bas / sous la médiane, jaune = moyen / autour, rouge = haut / au-dessus)
+const PAL = [[44,123,182],[125,180,213],[240,205,110],[236,135,92],[196,43,58]];
+const ramp = x => { x = Math.max(0, Math.min(1, x)); const i = Math.min(3, Math.floor(x * 4)), f = x * 4 - i; return `rgb(${PAL[i].map((v, k) => Math.round(v + (PAL[i + 1][k] - v) * f))})`; };
+function col(p, t) { const [a, b] = t === "M" ? [6000, 11000] : [4500, 8000]; return ramp((p - a) / (b - a)); }
+const colRel = r => ramp((r + .25) / .5); // -25 % et moins -> bleu, +25 % et plus -> rouge
+const sheetH = () => { const s = $("sheet"); return s ? s.offsetHeight : 60; };
+// options communes des popups : largeur adaptée au téléphone, recentrage en laissant la place aux boutons, au tiroir et à la barre Safari
 const PO = () => ({maxWidth: Math.min(360, window.innerWidth - 56), minWidth: Math.min(240, window.innerWidth - 56), autoPan: true, keepInView: true,
-  autoPanPaddingTopLeft: [12, window.innerWidth <= 800 ? 96 : 70], autoPanPaddingBottomRight: [12, 40]});
+  autoPanPaddingTopLeft: [12, window.innerWidth <= 800 ? 64 : 64], autoPanPaddingBottomRight: [12, (window.innerWidth <= 800 ? sheetH() : 30) + 12]});
 const wrap = h => h + `<div class="pop-f"><button class="pop-x" onclick="map.closePopup()">× Fermer</button></div>`;
 const dfr = d => d.split("-").reverse().join("/");
 const DA = V.dpeA || {};
@@ -110,91 +176,235 @@ const BYQ = {}, BYA = {};
 F.forEach((f, i) => { const p = f.properties; p.i = i; p.ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]]; const q = p.q || ("pt" + i);
   p.q = q; (BYQ[q] = BYQ[q] || []).push(p); (BYA[p.a] = BYA[p.a] || new Set()).add(q); });
 Object.values(BYQ).forEach(a => a.sort((x, y) => x.d < y.d ? 1 : -1));
-let Y0 = 2021, Y1 = 2026;
+function med(a) { if (!a.length) return null; a = a.slice().sort((x, y) => x - y); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; }
+function qt(a, q) { if (!a.length) return null; a = a.slice().sort((x, y) => x - y); return a[Math.min(a.length - 1, Math.max(0, Math.round(q * (a.length - 1))))]; }
+// ---- indice annuel pour les « € d'aujourd'hui » : médiane €/m² par type et par an ; par zone si au moins 30 ventes chaque année, sinon tout le périmètre
+const GI = {M: {}, A: {}}, ZI = {};
+(() => { const b = {}; for (const f of F) { const p = f.properties; for (const k of [`*|${p.t}|${p.y}`, `${p.z}|${p.t}|${p.y}`]) (b[k] = b[k] || []).push(p.p); }
+  for (const t of "MA") for (let y = YA; y <= YR; y++) GI[t][y] = med(b[`*|${t}|${y}`] || []);
+  for (const z in ZN) for (const t of "MA") { let okz = true; const s = {}; for (let y = YA; y <= YR; y++) { const a = b[`${z}|${t}|${y}`] || []; if (a.length < 30) okz = false; s[y] = med(a); } if (okz) ZI[`${z}|${t}`] = s; } })();
+for (const f of F) { const p = f.properties, s = ZI[`${p.z}|${p.t}`] || GI[p.t], k = s[YR] && s[p.y] ? s[YR] / s[p.y] : 1; p.pa = Math.round(p.p * k); p.va = Math.round(p.v * k / 1000) * 1000; }
+let Y0 = 2021, Y1 = 2026, EUR = false, CM = "rel";
 const inW = p => p.y >= Y0 && p.y <= Y1;
+const val = p => EUR ? p.pa : p.p; // €/m² affiché : nominal ou ramené en € de l'année de référence
+const eurL = () => EUR ? ` en € ${YR}` : "";
+let MZ = {}, MT = {}; // médianes de zone (même type, fenêtre, en € de référence) pour la couleur relative
+const relR = p => { const m = MZ[`${p.z}|${p.t}`] ?? MT[p.t]; return m ? p.pa / m - 1 : null; };
+const pct = r => r == null ? "" : `${r >= 0 ? "+" : "−"}${Math.abs(Math.round(r * 100))} %`;
+function liens(q, ll, a) {
+  const L1 = [];
+  if (!q.startsWith("pt")) L1.push(`<a target="_blank" rel="noopener" href="https://explore.data.gouv.fr/fr/immobilier?onglet=carte&filtre=tous&level=parcelle&code=${q}&lat=${ll[0].toFixed(5)}&lng=${ll[1].toFixed(5)}&zoom=18">DVF data.gouv ↗</a>`);
+  L1.push(`<a target="_blank" rel="noopener" href="https://www.georisques.gouv.fr/mes-risques/connaitre-les-risques-pres-de-chez-moi/rapport2?lon=${ll[1].toFixed(6)}&lat=${ll[0].toFixed(6)}&isCadastre=true">Géorisques ↗</a>`);
+  const idd = a.find(p => p.dpe_id); // hook : numéro de DPE ADEME s'il est un jour exporté
+  L1.push(idd ? `<a target="_blank" rel="noopener" href="https://observatoire-dpe-audit.ademe.fr/afficher-dpe/${encodeURIComponent(idd.dpe_id)}">DPE ADEME ↗</a>`
+              : `<a target="_blank" rel="noopener" href="https://observatoire-dpe-audit.ademe.fr/trouver-dpe">Chercher le DPE (ADEME) ↗</a>`);
+  L1.push(`<a target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${ll[0].toFixed(6)},${ll[1].toFixed(6)}">Street View ↗</a>`);
+  return `<div class="pop-a">${L1.join("")}</div>`;
+}
 function popupParc(q, note) {
   const a = BYQ[q], last = a[0], lw = a.find(inW);
   const adrs = [...new Set(a.map(p => p.a))];
   let h = `<div class="pop-t">` + (note ? `<div class="approx">${note}</div>` : "") + `<b>${adrs.join("<br>")}</b>${last.ax ? ' <span class="approx">(adresse la plus proche)</span>' : ''}<br>`;
   h += `<span class="approx">Parcelle ${q.startsWith("pt") ? "inconnue" : q.slice(5, 8) === "000" ? q.slice(8, 10).replace(/^0/, "") + " " + +q.slice(10) : q} · ${ZN[last.z]} · position approximative (parcelle)</span></div>`;
-  const ref = lw || last;
-  h += `<div style="margin-top:4px">${lw ? "Dernière vente dans la fenêtre" : `<span class="badge">Aucune vente ${Y0}–${Y1}</span> dernière vente connue`} :<br><b>${dfr(ref.d)} · ${ref.t === "M" ? "Maison" : "Appartement"}${ref.f ? " (VEFA)" : ""} · ${ref.s} m² · ${fmt(ref.v)} € · ${fmt(ref.p)} €/m²</b></div>` + dpeLigne(ref);
+  const ref = lw || last, r = relR(ref);
+  h += `<div style="margin-top:4px">${lw ? "Dernière vente dans la fenêtre" : `<span class="badge">Aucune vente ${Y0}–${Y1}</span> dernière vente connue`} :<br><b>${dfr(ref.d)} · ${ref.t === "M" ? "Maison" : "Appartement"}${ref.f ? " (VEFA)" : ""} · ${ref.s} m² · ${fmt(ref.v)} € · ${fmt(ref.p)} €/m²</b></div>`;
+  h += `<div class="pop-k">${ref.y < YR ? `≈ <b>${fmt(ref.pa)} €/m²</b> en € ${YR} (≈ ${fmt(ref.va)} €)` : `Vente ${YR}`}${r != null ? ` · <b>${pct(r)}</b> vs médiane ${ref.t === "M" ? "maisons" : "apparts"} de la zone (${Y0}–${Y1})` : ""}</div>` + dpeLigne(ref);
   h += `<div style="margin-top:6px">Historique complet de la parcelle (${a.length} vente${a.length > 1 ? "s" : ""}, depuis 2014) :</div><table class="hist">` +
-    a.map(p => `<tr class="${inW(p) ? "in" : "out"}"><td>${dfr(p.d)}</td><td>${p.t}${p.f ? "·neuf" : ""}</td><td class="num">${p.s} m²</td><td class="num">${fmt(p.v)} €</td><td class="num">${fmt(p.p)} €/m²</td><td>${pas(p.dpe, 1, p.dpe_ax)}</td>${adrs.length > 1 ? `<td class="approx">${p.a.replace(/ 92\d{3}.*/, "")}</td>` : ""}</tr>`).join("") + "</table>";
+    a.map(p => `<tr class="${inW(p) ? "in" : "out"}"><td>${dfr(p.d)}</td><td>${p.t}${p.f ? "·neuf" : ""}</td><td class="num">${p.s} m²</td><td class="num">${fmt(p.v)} €</td><td class="num">${fmt(p.p)} €/m²</td>${EUR ? `<td class="num approx">≈${fmt(p.pa)}</td>` : ""}<td>${pas(p.dpe, 1, p.dpe_ax)}</td>${adrs.length > 1 ? `<td class="approx">${p.a.replace(/ 92\d{3}.*/, "")}</td>` : ""}</tr>`).join("") + "</table>";
   h += dpeAdr(adrs);
   const oth = [...new Set(adrs.flatMap(x => [...BYA[x]]))].filter(x => x !== q);
   if (oth.length) h += `<div style="margin-top:6px">Même adresse, autre(s) parcelle(s) :</div><table class="hist">` + oth.flatMap(o => BYQ[o]).sort((x, y) => x.d < y.d ? 1 : -1).slice(0, 15)
     .map(p => `<tr class="${inW(p) ? "in" : "out"}"><td>${dfr(p.d)}</td><td>${p.t}</td><td class="num">${p.s} m²</td><td class="num">${fmt(p.v)} €</td><td class="num">${fmt(p.p)} €/m²</td></tr>`).join("") + "</table>";
-  h += `<div class="approx" style="margin-top:4px">Source : ${[...new Set(a.map(p => p.src === "C" ? "DVF+ Cerema" : p.src === "D" ? "DVF DGFiP" : "geo-dvf"))].join(", ")} · en gras = dans la fenêtre ${Y0}–${Y1}${a.some(p => p.dpe || p.dpe_n) ? " · DPE : open data ADEME, rapprochement adresse / surface (bord pointillé = approximation)" : ""}</div>`;
+  h += liens(q, last.ll, a);
+  h += `<div class="approx" style="margin-top:4px">Source : ${[...new Set(a.map(p => p.src === "C" ? "DVF+ Cerema" : p.src === "D" ? "DVF DGFiP" : "geo-dvf"))].join(", ")} · en gras = dans la fenêtre ${Y0}–${Y1}${EUR ? ` · ≈ = €/m² en € ${YR}` : ""}${a.some(p => p.dpe || p.dpe_n) ? " · DPE : open data ADEME, rapprochement adresse / surface (bord pointillé = approximation)" : ""}</div>`;
   return wrap(h);
 }
 const clu = L.markerClusterGroup({disableClusteringAtZoom: 16, chunkedLoading: true, maxClusterRadius: 45, spiderfyOnMaxZoom: false});
 const plain = L.layerGroup(); let heat = null;
 const mk = []; // un marqueur par parcelle, reconstruit à chaque filtrage
-// contours de parcelles vendues, cliquables au zoom fort
-const parcL = L.layerGroup();
+const openParc = (q, ll, note) => L.popup(PO()).setLatLng(ll || BYQ[q][0].ll).setContent(popupParc(q, note)).openOn(map);
+// parcelles vendues : cliquables et teintées par €/m² au zoom fort
+const parcL = L.layerGroup(), PL = {};
 for (const [q, g] of Object.entries(V.parcelles || {})) {
   if (!BYQ[q]) continue;
-  L.geoJSON({type: g.t, coordinates: g.c}, {style: {color: "#555", weight: 1, fillColor: "#999", fillOpacity: .06}, bubblingMouseEvents: false})
-    .on("click", e => { L.DomEvent.stopPropagation(e); L.popup(PO()).setLatLng(e.latlng).setContent(popupParc(q)).openOn(map); }).addTo(parcL);
+  PL[q] = L.geoJSON({type: g.t, coordinates: g.c}, {style: {color: "#6b7280", weight: .7, fillColor: "#999", fillOpacity: .04}, bubblingMouseEvents: false})
+    .on("click", e => { L.DomEvent.stopPropagation(e); openParc(q, e.latlng); }).addTo(parcL);
 }
 const syncParc = () => map.getZoom() >= 17 ? parcL.addTo(map) : map.removeLayer(parcL);
 map.on("zoomend", syncParc);
-// clic ailleurs : parcelle vendue la plus proche
-map.on("click", e => { let best = null, bd = 1e9;
+// clic ailleurs : parcelle vendue la plus proche (et fermeture du panneau filtres sur mobile)
+map.on("click", e => { if (document.body.classList.contains("open")) { document.body.classList.remove("open"); return; }
+  let best = null, bd = 1e9;
   for (const q in BYQ) { const d = map.distance(e.latlng, BYQ[q][0].ll); if (d < bd) { bd = d; best = q; } }
   const c = bd <= 40 ? popupParc(best, `Parcelle vendue la plus proche, à ${Math.round(bd)} m du clic`) : wrap(`<div class="pop-t">Aucune vente connue depuis 2014 dans un rayon de 40 m (parcelle la plus proche à ${Math.round(bd)} m).</div>`);
   L.popup(PO()).setLatLng(bd <= 40 ? BYQ[best][0].ll : e.latlng).setContent(c).openOn(map); });
-const $ = id => document.getElementById(id);
-function med(a) { if (!a.length) return null; a = a.slice().sort((x, y) => x - y); const m = a.length >> 1; return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2; }
-let sortK = "d", sortD = -1;
-let cur = [], nRem = 0;
+let cur = [], nRem = 0, OK = () => true, DE = p => p.dpe;
+const mStr = (a, unit = "") => a.length >= NMIN ? `<b>${fmt(med(a))}</b>${unit}` : `n.d.`;
 function apply() {
   let y0 = +$("y0").value, y1 = +$("y1").value; if (y0 > y1) [y0, y1] = [y1, y0]; Y0 = y0; Y1 = y1; $("ylab").textContent = `${y0} à ${y1}`;
+  EUR = $("eur").checked; CM = (document.querySelector("input[name=cm]:checked") || {}).value || "rel";
+  document.querySelectorAll(".pill").forEach(l => l.classList.toggle("on", l.querySelector("input").checked));
   const T = [...document.querySelectorAll(".ft:checked")].map(e => e.value), Z = [...document.querySelectorAll(".fz:checked")].map(e => e.value);
   const DP = [...document.querySelectorAll(".fdpe:checked")].map(e => e.value), dAll = DP.length === 8, dst = $("dstrict").checked, cd = $("cdpe").checked;
   const dE = p => p.dpe && (!dst || p.dpe_ax === 0) ? p.dpe : null; // « fiables seulement » : une étiquette approchée compte comme « sans DPE »
   const okD = p => dAll || (dE(p) ? DP.includes(dE(p)) : DP.includes("-"));
   const smin = +$("smin").value || 0, pmin = +$("pmin").value || 0, pmax = +$("pmax").value || 1e9, vefa = $("vefa").checked, rem = $("rem").checked;
   const ok = p => T.includes(p.t) && Z.includes(p.z) && p.s >= smin && p.p >= pmin && p.p <= pmax && (vefa || !p.f) && okD(p);
-  cur = []; mk.length = 0; nRem = 0;
+  OK = ok; DE = dE;
+  cur = []; nRem = 0; const R = [];
   for (const q in BYQ) {
     const S = BYQ[q].filter(ok); if (!S.length) continue;
     const W = S.filter(inW); W.forEach(p => cur.push(p));
     let ref = W[0], old = false; if (!ref) { if (!rem) continue; ref = S[0]; old = true; nRem++; }
-    const o = old ? {radius: ref.t === "M" ? 7 : 5, color: "#777", weight: 2, dashArray: "3 3", fillColor: cd ? (DCOL[dE(ref)] || "#bbb") : col(ref.p, ref.t), fillOpacity: .35, bubblingMouseEvents: false}
-                  : {radius: ref.t === "M" ? 7 : 5, color: ref.t === "M" ? "#111" : "#fff", weight: ref.t === "M" ? 2 : 1, fillColor: cd ? (DCOL[dE(ref)] || "#bbb") : col(ref.p, ref.t), fillOpacity: .9, bubblingMouseEvents: false};
+    R.push([q, ref, old]);
+  }
+  // médianes de zone (en € de référence pour comparer des années différentes)
+  MZ = {}; MT = {}; const bz = {};
+  for (const p of cur) { (bz[`${p.z}|${p.t}`] = bz[`${p.z}|${p.t}`] || []).push(p.pa); (bz[p.t] = bz[p.t] || []).push(p.pa); }
+  for (const k in bz) { if (bz[k].length >= NMIN) (k.length === 1 ? MT : MZ)[k] = med(bz[k]); }
+  const colOf = ref => { if (cd) return DCOL[dE(ref)] || "#bbb"; if (CM === "rel") { const r = relR(ref); if (r != null) return colRel(r); } return col(val(ref), ref.t); };
+  mk.length = 0; const RQ = {};
+  for (const [q, ref, old] of R) {
+    const c = colOf(ref); RQ[q] = [c, old];
+    const o = old ? {radius: ref.t === "M" ? 7 : 5, color: "#777", weight: 2, dashArray: "3 3", fillColor: c, fillOpacity: .35, bubblingMouseEvents: false}
+                  : {radius: ref.t === "M" ? 7 : 5, color: ref.t === "M" ? "#1f2a37" : "#fff", weight: ref.t === "M" ? 2 : 1, fillColor: c, fillOpacity: .92, bubblingMouseEvents: false};
     const m = L.circleMarker(ref.ll, o).bindPopup(() => popupParc(q), PO()); m.q = q; m.p = ref; mk.push(m);
   }
+  for (const q in PL) { const x = RQ[q]; PL[q].setStyle(x ? {fillColor: x[0], fillOpacity: x[1] ? .22 : .5, color: "#fff", weight: .8} : {fillColor: "#999", fillOpacity: .04, color: "#9ca3af", weight: .6}); }
   clu.clearLayers(); plain.clearLayers(); const tgt = $("clu").checked ? clu : plain;
   map.removeLayer(clu); map.removeLayer(plain); tgt.addLayers ? tgt.addLayers(mk) : mk.forEach(m => tgt.addLayer(m)); tgt.addTo(map);
   if (heat) { map.removeLayer(heat); heat = null; }
   if ($("heat").checked) heat = L.heatLayer(cur.map(p => [p.ll[0], p.ll[1], .6]), {radius: 22, blur: 18, minOpacity: .25}).addTo(map);
-  const pm = t => cur.filter(p => p.t === t).map(p => p.p);
-  const zr = Object.keys(ZN).filter(z => Z.includes(z)).map(z => { const a = cur.filter(p => p.z === z && p.t === "M").map(p => p.p), b = cur.filter(p => p.z === z && p.t === "A").map(p => p.p);
-    return `<tr><td>${ZN[z]}</td><td class="num">${a.length >= 5 ? fmt(med(a)) : "n.d."} <span class="approx">(${a.length})</span></td><td class="num">${b.length >= 5 ? fmt(med(b)) : "n.d."} <span class="approx">(${b.length})</span></td></tr>`; }).join("");
-  $("stat").innerHTML = `<b>${fmt(cur.length)}</b> ventes ${y0}–${y1} sur ${fmt(mk.length - nRem)} parcelles${rem ? ` + <b>${fmt(nRem)}</b> parcelles affichées par remontée (dernière vente avant ${y0})` : ""}<br>Médiane maisons : <b>${fmt(med(pm("M")))}</b> €/m² (${pm("M").length}) · appartements : <b>${fmt(med(pm("A")))}</b> €/m² (${pm("A").length})
-    <table><thead><tr><th>Zone</th><th class="num">Maison</th><th class="num">Appart</th></tr></thead><tbody>${zr}</tbody></table><span class="approx">Médianes sur la fenêtre seule (sans les ventes remontées). n.d. = moins de 5 ventes</span>`;
-  table();
+  const pm = t => cur.filter(p => p.t === t).map(val);
+  const zr = Object.keys(ZN).filter(z => Z.includes(z)).map(z => { const a = cur.filter(p => p.z === z && p.t === "M").map(val), b = cur.filter(p => p.z === z && p.t === "A").map(val);
+    return `<tr><td>${ZN[z]}</td><td class="num">${mStr(a)} <span class="approx">(${a.length})</span></td><td class="num">${mStr(b)} <span class="approx">(${b.length})</span></td></tr>`; }).join("");
+  $("stat").innerHTML = `<b>${fmt(cur.length)}</b> ventes ${y0}–${y1} sur ${fmt(mk.length - nRem)} parcelles${rem ? ` + <b>${fmt(nRem)}</b> parcelles affichées par remontée (dernière vente avant ${y0})` : ""}<br>Médiane maisons : ${mStr(pm("M"))} €/m² (${pm("M").length}) · appartements : ${mStr(pm("A"))} €/m² (${pm("A").length})${eurL()}
+    <table><thead><tr><th>Zone</th><th class="num">Maison</th><th class="num">Appart</th></tr></thead><tbody>${zr}</tbody></table><span class="approx">Médianes €/m²${eurL()} sur la fenêtre seule (sans les ventes remontées). n.d. = moins de ${NMIN} ventes ; (n) = nombre de ventes.</span>`;
+  legend(cd); fiche(Z, T); refreshView(); writeHash();
 }
-function table() {
-  const r = cur.slice().sort((a, b) => { const x = a[sortK] ?? "Z", y = b[sortK] ?? "Z"; return (x > y ? 1 : x < y ? -1 : 0) * sortD; }).slice(0, 400);
-  $("tab").querySelector("tbody").innerHTML = r.map(p => `<tr data-q="${p.q}"><td>${dfr(p.d)}</td><td>${p.a}</td><td>${p.t}</td><td class="num">${p.s}</td><td class="num">${fmt(p.v)}</td><td class="num">${fmt(p.p)}</td><td>${pas(p.dpe, 1, p.dpe_ax)}</td></tr>`).join("");
+function legend(cd) {
+  const g = cd ? `Couleur = DPE ADEME (gris = sans DPE).`
+    : CM === "rel" ? `Couleur = écart à la médiane €/m² de la zone, même type, fenêtre ${Y0}–${Y1} : <i style="background:${colRel(-.25)}"></i>sous (−25 % et moins) <i style="background:${colRel(0)}"></i>autour <i style="background:${colRel(.25)}"></i>au-dessus (+25 % et plus). Comparaison faite en € ${YR} ; zone avec moins de ${NMIN} ventes : médiane de tout le périmètre.`
+    : `Couleur €/m²${eurL()} (maisons 6 à 11 k€, appartements 4,5 à 8 k€) : <i style="background:${ramp(0)}"></i>bas <i style="background:${ramp(.5)}"></i>moyen <i style="background:${ramp(1)}"></i>haut.`;
+  $("leg").innerHTML = g + ` Gros point cerclé de foncé = maison, petit point = appartement. Point pâle à bord gris pointillé = dernière vente hors fenêtre (remontée). Un point = une parcelle ; clic = tout son historique. Au zoom 17+, les parcelles vendues sont teintées et cliquables ; un clic ailleurs ouvre la parcelle vendue la plus proche (40 m max).<br><b>€ ${YR}</b> : €/m² × (médiane annuelle ${YR} / médiane de l’année de vente), même type ; par zone si au moins 30 ventes chaque année, sinon tout le périmètre. ${YR} = premier semestre seulement.`;
 }
-$("tab").addEventListener("click", e => { const tr = e.target.closest("tr[data-q]"); if (tr) { const q = tr.dataset.q; map.setView(BYQ[q][0].ll, 18); document.body.classList.remove("open"); setTimeout(() => L.popup(PO()).setLatLng(BYQ[q][0].ll).setContent(popupParc(q)).openOn(map), 350); } });
-document.querySelectorAll("th[data-k]").forEach(th => th.onclick = () => { const k = th.dataset.k; sortD = sortK === k ? -sortD : (k === "d" || k === "p" || k === "v" ? -1 : 1); sortK = k; table(); });
-$("csv").onclick = () => { const h = ["parcelle","date","annee","zone","adresse","adresse_approchee","type","surface_m2","prix_eur","eur_m2","vefa","lat","lon","source","dpe_ademe","ges","dpe_date","dpe_surface_m2","dpe_approx_0strict_1approx_2immeuble","nb_dpe_adresse"];
-  const L2 = cur.map(p => { const ll = {lat: p.ll[0], lng: p.ll[1]}; return [p.q, p.d, p.y, ZN[p.z], `"${p.a.replace(/"/g, '""')}"`, p.ax, p.t === "M" ? "Maison" : "Appartement", p.s, p.v, p.p, p.f, ll.lat, ll.lng, p.src === "C" ? "DVF+ Cerema" : p.src === "D" ? "DVF DGFiP" : "geo-dvf", p.dpe || "", p.dpe_g || "", p.dpe_d || "", p.dpe_s || "", p.dpe ? p.dpe_ax : "", p.dpe_n || 0].join(","); });
-  const b = new Blob(["\ufeff" + h.join(",") + "\n" + L2.join("\n")], {type: "text/csv"}); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "ventes_filtrees.csv"; a.click(); };
-document.querySelectorAll("input").forEach(e => e.addEventListener(e.type === "range" || e.type === "number" ? "input" : "change", apply));
+// ---- fiche zone : courbe des médianes annuelles (SVG maison, sans bibliothèque)
+function fiche(Z, T) {
+  const b = {}; for (const f of F) { const p = f.properties; if (!OK(p)) continue; (b[`${p.z}|${p.t}|${p.y}`] = b[`${p.z}|${p.t}|${p.y}`] || []).push(p.p); }
+  const W = 300, H = 92, pl = 4, pr = 44, pt = 6, pb = 24, n = YR - YA, X = y => pl + (y - YA) / n * (W - pl - pr);
+  const TC = {M: "#1f2a37", A: "#2c7bb6"};
+  $("fiche").innerHTML = Object.keys(ZN).filter(z => Z.includes(z)).map(z => {
+    const S = {}; let lo = 1e9, hi = 0, nmax = 1; const ny = {};
+    for (const t of T) { S[t] = {}; for (let y = YA; y <= YR; y++) { const a = b[`${z}|${t}|${y}`] || []; ny[y] = (ny[y] || 0) + a.length; if (a.length >= NMIN) { const m = med(a); S[t][y] = [m, a.length]; lo = Math.min(lo, m); hi = Math.max(hi, m); } } }
+    for (const y in ny) nmax = Math.max(nmax, ny[y]);
+    if (hi === 0) return `<div class="zc"><div class="zt">${ZN[z]}</div><div class="approx">Pas assez de ventes par an (moins de ${NMIN}).</div></div>`;
+    const pad = (hi - lo) * .12 + 50; lo -= pad; hi += pad; const Yp = v => pt + (1 - (v - lo) / (hi - lo)) * (H - pt - pb - 12);
+    let s = `<rect x="${X(Math.max(YA, Y0)) - 6}" y="0" width="${X(Math.min(YR, Y1)) - X(Math.max(YA, Y0)) + 12}" height="${H - pb}" fill="#eef1f4"/>`;
+    for (let y = YA; y <= YR; y++) { const h = ny[y] / nmax * 11; s += `<rect x="${X(y) - 4}" y="${H - pb - h}" width="8" height="${h}" fill="#cbd5e1"><title>${y} : ${ny[y]} ventes</title></rect>`; }
+    const lab = [];
+    for (const t of T) { let d = "", pen = false, last = null;
+      for (let y = YA; y <= YR; y++) { const v = S[t][y]; if (!v) { pen = false; continue; } d += `${pen ? "L" : "M"}${X(y).toFixed(1)},${Yp(v[0]).toFixed(1)}`; pen = true; last = [y, v[0]];
+        s += `<circle cx="${X(y)}" cy="${Yp(v[0])}" r="2.4" fill="${TC[t]}"><title>${y} · ${t === "M" ? "maisons" : "apparts"} ${fmt(v[0])} €/m² (${v[1]} ventes)</title></circle>`; }
+      s += `<path d="${d}" fill="none" stroke="${TC[t]}" stroke-width="1.8"/>`;
+      if (last) lab.push([t, last]); }
+    lab.sort((a, b2) => a[1][1] - b2[1][1]).forEach(([t, l], i) => { let yy = Yp(l[1]) + 4; if (lab.length === 2 && i === 1 && Math.abs(Yp(lab[0][1][1]) - Yp(l[1])) < 11) yy = Yp(lab[0][1][1]) + 4 - 11; s += `<text x="${W - pr + 4}" y="${yy}" font-size="10.5" fill="${TC[t]}" font-weight="600">${t} ${(l[1] / 1000).toFixed(1).replace(".", ",")}k</text>`; });
+    s += `<text x="${pl}" y="${H - 6}" font-size="10" fill="#6b7280">${YA}</text><text x="${X(YR)}" y="${H - 6}" font-size="10" fill="#6b7280" text-anchor="end">${YR}</text><text x="${(X(YA) + X(YR)) / 2}" y="${H - 6}" font-size="10" fill="#6b7280" text-anchor="middle">${T.map(t => `<tspan fill="${TC[t]}">● ${t === "M" ? "maisons" : "apparts"}</tspan>`).join("  ")}</text>`;
+    return `<div class="zc"><div class="zt"><span>${ZN[z]}</span><span class="approx">€/m² médian / an</span></div><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Évolution ${ZN[z]}">${s}</svg></div>`;
+  }).join("");
+}
+// ---- zone visible, mode balade, tiroir liste
+const BAL = {on: false, r: 250, circle: null, lock: false}; // lock : le rayon reste en place quand la carte bouge par programme (tap dans la liste)
+let me = null, locAsk = false, firstFix = false, SORT = "d", SDIR = -1, LIST = [];
+const origin = () => BAL.on && BAL.circle ? BAL.circle.getLatLng() : me ? me.getLatLng() : map.getCenter();
+function refreshView() {
+  const bnd = map.getBounds(), o = origin(), vis = cur.filter(p => bnd.contains(p.ll));
+  const vm = vis.filter(p => p.t === "M").map(val), va = vis.filter(p => p.t === "A").map(val);
+  $("chip").innerHTML = `<div>Ici, ${Y0}–${Y1}${EUR ? ` (€ ${YR})` : ""} · maisons ${mStr(vm)} <span class="approx">(${vm.length})</span> · apparts ${mStr(va)} <span class="approx">(${va.length})</span> €/m²</div>`;
+  let src = vis, sum;
+  if (BAL.on) {
+    src = cur.filter(p => map.distance(o, p.ll) <= BAL.r);
+    const a = src.map(val), bm = src.filter(p => p.t === "M").map(val), ba = src.filter(p => p.t === "A").map(val);
+    const rg = a.length >= NMIN ? `${fmt(qt(a, .1))} à ${fmt(qt(a, .9))} €/m² <span class="approx">(10 % à 90 %)</span>` : a.length ? `${fmt(Math.min(...a))} à ${fmt(Math.max(...a))} €/m² (min à max)` : "";
+    sum = `<b>Rayon ${BAL.r} m</b> · <b>${src.length}</b> ventes ${Y0}–${Y1} <span class="approx">${me ? "autour de ma position" : BAL.lock ? "rayon figé (glisse la carte pour le déplacer)" : "autour du centre de la carte"}</span><br>Maisons ${mStr(bm)} <span class="approx">(${bm.length})</span> · apparts ${mStr(ba)} <span class="approx">(${ba.length})</span> €/m²${eurL()}${rg ? `<br><span class="approx">Fourchette</span> ${rg}` : ""}`;
+  } else sum = `<b>${src.length}</b> ventes ${Y0}–${Y1} dans la zone visible${src.length > 300 ? " (300 affichées)" : ""} · tape pour ${$("sheet").classList.contains("col") ? "ouvrir" : "agrandir ou replier"} la liste`;
+  $("sum").innerHTML = sum;
+  for (const p of src) p._x = map.distance(o, p.ll);
+  const key = SORT === "p" ? val : SORT === "x" ? (p => p._x) : SORT === "dpe" ? (p => DE(p) || "Z") : (p => p.d);
+  LIST = src.slice().sort((a, b) => { const x = key(a), y = key(b); return (x > y ? 1 : x < y ? -1 : 0) * SDIR; });
+  $("list").innerHTML = LIST.slice(0, 300).map((p, i) => { const r = relR(p);
+    return `<div class="it" data-i="${i}"><i style="background:${$("cdpe").checked ? (DCOL[DE(p)] || "#bbb") : CM === "rel" && r != null ? colRel(r) : col(val(p), p.t)}"></i>
+      <div><b>${fmt(val(p))} €/m²</b>${EUR ? ` <span class="approx">(${fmt(p.p)} nominal)</span>` : p.y < YR ? ` <span class="approx">≈${fmt(p.pa)} en € ${YR}</span>` : ""} ${pas(p.dpe, 1, p.dpe_ax)}</div>
+      <div class="r">${fmt(p.v)} €</div>
+      <div class="s">${dfr(p.d)} · ${p.t === "M" ? "Maison" : "Appart"} ${p.s} m² · ${p.a.replace(/ 92\d{3}.*/, "")}</div>
+      <div class="r approx">${p._x < 1000 ? Math.round(p._x) + " m" : (p._x / 1000).toFixed(1).replace(".", ",") + " km"}${r != null ? ` · ${pct(r)}` : ""}</div></div>`; }).join("") || `<div class="sub" style="padding:12px">Aucune vente ici avec ces filtres.</div>`;
+  setSh();
+}
+const setSh = () => document.documentElement.style.setProperty("--sh", sheetH() + "px");
+function sheet(st) { const s = $("sheet"); s.classList.remove("col", "half", "full"); s.classList.add(st); setSh(); refreshView(); }
+$("sh-h").addEventListener("click", e => { if (e.target.closest("button")) return; const s = $("sheet"); sheet(s.classList.contains("col") ? "half" : s.classList.contains("half") ? "full" : "col"); });
+$("list").addEventListener("click", e => { const it = e.target.closest(".it"); if (!it) return; const p = LIST[+it.dataset.i];
+  if (window.innerWidth <= 800) sheet("col");
+  if (BAL.on) BAL.lock = true; map.setView(p.ll, Math.max(map.getZoom(), 18)); setTimeout(() => openParc(p.q), 350); });
+$("srt").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; const k = b.dataset.k;
+  SDIR = SORT === k ? -SDIR : (k === "d" || k === "p" ? -1 : 1); SORT = k;
+  $("srt").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); if ($("sheet").classList.contains("col")) sheet("half"); else refreshView(); });
+$("rad").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; BAL.r = +b.dataset.r;
+  $("rad").querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b)); if (BAL.circle) BAL.circle.setRadius(BAL.r); refreshView(); writeHash(); });
+function balade(on) {
+  BAL.on = on; $("bal").classList.toggle("on", on); document.body.classList.toggle("bal", on);
+  if (on) { BAL.circle = BAL.circle || L.circle(origin(), {radius: BAL.r, color: "#2c6fa8", weight: 2, fillColor: "#2c6fa8", fillOpacity: .07, interactive: false});
+    BAL.circle.setLatLng(me ? me.getLatLng() : map.getCenter()).setRadius(BAL.r).addTo(map); locAsk = false; map.locate({watch: true, enableHighAccuracy: true, setView: false}); }
+  else { if (BAL.circle) map.removeLayer(BAL.circle); map.stopLocate(); }
+  refreshView(); writeHash();
+}
+$("bal").onclick = () => balade(!BAL.on);
+map.on("move", () => { if (BAL.on && !me && !BAL.lock && BAL.circle) BAL.circle.setLatLng(map.getCenter()); });
+map.on("dragstart", () => { BAL.lock = false; });
+let mvT; map.on("moveend", () => { clearTimeout(mvT); mvT = setTimeout(() => { refreshView(); writeHash(); }, 120); });
+// ---- géolocalisation
+$("loc").onclick = () => { locAsk = true; map.locate({setView: true, maxZoom: 18, enableHighAccuracy: true, watch: BAL.on}); };
+map.on("locationfound", e => { if (me) me.setLatLng(e.latlng); else me = L.circleMarker(e.latlng, {radius: 8, color: "#fff", weight: 3, fillColor: "#1e88e5", fillOpacity: 1, interactive: false}).addTo(map);
+  if (BAL.on && BAL.circle) { BAL.circle.setLatLng(e.latlng); if (!firstFix) map.setView(e.latlng, Math.max(map.getZoom(), 16)); firstFix = true; refreshView(); } });
+map.on("locationerror", e => { if (locAsk) alert("Position indisponible : " + e.message + " (la géolocalisation exige https ou localhost sur la plupart des navigateurs).");
+  else if (BAL.on) toast("Position indisponible : rayon autour du centre de la carte"); locAsk = false; });
+function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("v"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("v"), 2200); }
+// ---- CSV (fenêtre complète, ou liste du tiroir : rayon / zone visible)
+function csv(rows, name) { const h = ["parcelle","date","annee","zone","adresse","adresse_approchee","type","surface_m2","prix_eur","eur_m2",`eur_m2_en_eur_${YR}`,"ecart_mediane_zone_pct","vefa","lat","lon","source","dpe_ademe","ges","dpe_date","dpe_surface_m2","dpe_approx_0strict_1approx_2immeuble","nb_dpe_adresse"];
+  const L2 = rows.map(p => { const r = relR(p); return [p.q, p.d, p.y, ZN[p.z], `"${p.a.replace(/"/g, '""')}"`, p.ax, p.t === "M" ? "Maison" : "Appartement", p.s, p.v, p.p, p.pa, r == null ? "" : Math.round(r * 100), p.f, p.ll[0], p.ll[1], p.src === "C" ? "DVF+ Cerema" : p.src === "D" ? "DVF DGFiP" : "geo-dvf", p.dpe || "", p.dpe_g || "", p.dpe_d || "", p.dpe_s || "", p.dpe ? p.dpe_ax : "", p.dpe_n || 0].join(","); });
+  const b = new Blob(["\ufeff" + h.join(",") + "\n" + L2.join("\n")], {type: "text/csv"}); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = name; a.click(); }
+$("csv").onclick = () => csv(cur, "ventes_filtrees.csv");
+$("csv2").onclick = () => csv(LIST, BAL.on ? `ventes_rayon_${BAL.r}m.csv` : "ventes_zone_visible.csv");
+// ---- lien partageable (état dans le #)
+let hashOn = false;
+function writeHash() { if (!hashOn) return; const c = map.getCenter(), g = (s) => [...document.querySelectorAll(s)].map(e => e.value);
+  const h = {y0: Y0, y1: Y1, t: g(".ft:checked").join(""), z: g(".fz:checked").join(","), lat: c.lat.toFixed(5), lng: c.lng.toFixed(5), zoom: map.getZoom()};
+  for (const k of ["smin", "pmin", "pmax"]) if (+$(k).value) h[k] = $(k).value;
+  if (!$("rem").checked) h.rem = 0; if (!$("vefa").checked) h.vefa = 0; if ($("heat").checked) h.heat = 1; if (!$("clu").checked) h.clu = 0;
+  if (CM !== "rel") h.c = CM; if (EUR) h.eur = 1; if ($("cdpe").checked) h.cd = 1; if ($("dstrict").checked) h.ds = 1;
+  const dp = g(".fdpe:checked"); if (dp.length !== 8) h.dpe = dp.join(""); if (BAL.on) h.b = BAL.r;
+  history.replaceState(null, "", "#" + new URLSearchParams(h).toString()); }
+function readHash() { const h = new URLSearchParams(location.hash.slice(1)); if (![...h.keys()].length) return null;
+  const set = (id, k) => { if (h.has(k)) $(id).value = h.get(k); }; set("y0", "y0"); set("y1", "y1"); set("smin", "smin"); set("pmin", "pmin"); set("pmax", "pmax");
+  if (h.has("t")) document.querySelectorAll(".ft").forEach(e => e.checked = h.get("t").includes(e.value));
+  if (h.has("z")) { const z = h.get("z").split(","); document.querySelectorAll(".fz").forEach(e => e.checked = z.includes(e.value)); }
+  if (h.has("dpe")) document.querySelectorAll(".fdpe").forEach(e => e.checked = h.get("dpe").includes(e.value));
+  const b = (id, k, def) => { if (h.has(k)) $(id).checked = h.get(k) === "1"; else $(id).checked = def; };
+  b("rem", "rem", true); b("vefa", "vefa", true); b("heat", "heat", false); b("clu", "clu", true); b("eur", "eur", false); b("cdpe", "cd", false); b("dstrict", "ds", false);
+  if (h.get("c") === "abs") document.querySelector("input[name=cm][value=abs]").checked = true;
+  if (h.has("lat") && h.has("lng")) map.setView([+h.get("lat"), +h.get("lng")], +h.get("zoom") || 16, {animate: false});
+  return h.has("b") ? +h.get("b") : null; }
+$("share").onclick = async () => { writeHash(); const u = location.href;
+  try { await navigator.clipboard.writeText(u); toast("Lien copié"); } catch (e) { prompt("Lien à copier :", u); } };
+// ---- démarrage
 $("tog").onclick = () => document.body.classList.toggle("open");
 $("sidex").onclick = () => document.body.classList.remove("open");
 document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.remove("open"); });
-let me = null;
-$("loc").onclick = () => map.locate({setView: true, maxZoom: 18, enableHighAccuracy: true});
-map.on("locationfound", e => { if (me) map.removeLayer(me); me = L.circleMarker(e.latlng, {radius: 8, color: "#fff", weight: 3, fillColor: "#1e88e5", fillOpacity: 1}).addTo(map); });
-map.on("locationerror", e => alert("Position indisponible : " + e.message + " (la géolocalisation exige https ou localhost sur la plupart des navigateurs)."));
-apply(); syncParc();
+const b0 = readHash();
+document.querySelectorAll("#side input").forEach(e => e.addEventListener(e.type === "range" || e.type === "number" ? "input" : "change", apply));
+hashOn = true; apply(); syncParc();
+if (b0) { BAL.r = [100, 250, 500].includes(b0) ? b0 : 250; $("rad").querySelectorAll("button").forEach(x => x.classList.toggle("on", +x.dataset.r === BAL.r)); balade(true); }
+window.addEventListener("resize", setSh);
+if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(() => {});
 </script>
 <script src="annonces.js"></script>
 <script src="annonces_calque.js"></script>

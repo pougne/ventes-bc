@@ -43,9 +43,9 @@
   const box = document.createElement("div");
   box.innerHTML = `<h2>Annonces en cours</h2><label><input type="checkbox" id="annOn" checked> <b>Annonces en ligne (localisation sûre)</b></label>
 <div class="sub ann-leg"><b class="c">850 k€</b> adresse confirmée (${A.meta.confirmee}) · <b class="p">850 k€</b> parcelle probable (${A.meta.probable}). ${A.meta.exclues && A.meta.exclues.approximative ? `${A.meta.exclues.approximative} annonces à position approximative masquées. ` : ""}Prix demandés, pas des ventes DVF. Veille du ${A.meta.veille ? dfr(A.meta.veille) : "?"}.</div>`;
-  const liste = document.getElementById("csv") && document.getElementById("csv").closest("h2");
   const side = document.getElementById("side");
-  if (liste) side.insertBefore(box, liste); else side.appendChild(box);
+  const evol = [...side.querySelectorAll("h2")].find(h => /Évolution/i.test(h.textContent));
+  if (evol) side.insertBefore(box, evol); else side.appendChild(box);
   const cb = box.querySelector("#annOn");
   const sync = () => cb.checked ? grp.addTo(map) : map.removeLayer(grp);
   cb.addEventListener("change", sync); sync();

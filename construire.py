@@ -1,6 +1,6 @@
 """Construit l'outil carte cliquable des ventes (outil-ventes/index.html + ventes.csv).
 Périmètre : points dans le quartier Bac (élargi à la bande Flachat / mairie côté Asnières), l'ouest mairie ou le contour de Bois-Colombes.
-Sources : dvf_clean.csv (geo-dvf 2021-2025 nettoyé) + DVF+ open-data Cerema 2014-2020 (dvf_hist/*.geojson), même nettoyage.
+Sources : dvf_clean.csv (geo-dvf 2021-2025 nettoyé) + dvf_2026_clean.csv (DVF DGFiP brute 1er semestre 2026, via dvf_2026.py, même nettoyage) + DVF+ open-data Cerema 2014-2020 (dvf_hist/*.geojson), même nettoyage.
 2010-2013 : pas en open data (DV3F réservé aux acteurs publics)."""
 import os, sys, json, glob, io, urllib.request, uuid, pandas as pd, geopandas as gpd
 from shapely.geometry import shape
@@ -49,11 +49,18 @@ if len(h):
     h = h[["parcelle", "date", "annee", "nom_commune", "adresse", "type", "surface", "valeur", "pm2", "nature", "lon", "lat", "source", "adresse_approx"]]
     stat_h["gardees"] = len(h)
 t = pd.concat([d, h]) if len(h) else d
+# 2 bis. 1er semestre 2026 : DVF DGFiP brute (geo-dvf n'a pas encore 2026), nettoyée par dvf_2026.py ; position = parcelle, sinon géocodage BAN
+f26 = os.path.join(B, "dvf_2026_clean.csv")
+if os.path.exists(f26):
+    s26 = pd.read_csv(f26, dtype={"parcelle": str})
+    s26 = s26.assign(source="DVF DGFiP", adresse_approx=False, adresse=s26.adresse.where(s26.adresse.notna(), s26.parcelle.map(adr_parc)))
+    t = pd.concat([t, s26[["parcelle", "date", "annee", "nom_commune", "adresse", "type", "surface", "valeur", "pm2", "nature", "lon", "lat", "source", "adresse_approx"]]])
 # position unifiée : point représentatif de la parcelle cadastrale (Etalab), pour que toutes les ventes d'une parcelle tombent au même endroit
 import gzip
 cad = gpd.GeoDataFrame(pd.concat([gpd.read_file(gzip.open(f)) for f in glob.glob(os.path.join(B, "cadastre", "*-parcelles.json.gz"))]), crs="EPSG:4326")
 cad = cad[cad["id"].isin(set(t.parcelle.dropna()))].drop_duplicates("id").set_index("id")
 rp = cad.geometry.representative_point()
+t = t[t.parcelle.isin(rp.index) | t.lon.notna()]  # sans parcelle cadastrale ni géocodage : écartée
 t["lon"] = t.parcelle.map(rp.x).fillna(t.lon); t["lat"] = t.parcelle.map(rp.y).fillna(t.lat)
 g = gpd.GeoDataFrame(t, geometry=gpd.points_from_xy(t.lon, t.lat), crs="EPSG:4326")
 per = zone_bac.union(zone_ouest).union(bc).union(bande); g = g[g.within(per)].copy()
@@ -78,12 +85,12 @@ zg = {n: json.loads(gpd.GeoSeries([ZT[n] if n != "Reste de Bois-Colombes" else b
 ZC = {"Quartier Bac": "bac", "Ouest mairie BC": "ouest", "Frange Agnettes / BC nord": "frange", "Reste de Bois-Colombes": "bc"}
 feats = [{"type": "Feature", "geometry": {"type": "Point", "coordinates": [round(r.lon, 6), round(r.lat, 6)]},
           "properties": {"q": r.parcelle if isinstance(r.parcelle, str) else "", "d": r.date, "y": int(r.annee), "z": ZC[r.zone], "c": "BC" if r.nom_commune == "Bois-Colombes" else "AS", "a": r.adresse, "ax": int(bool(r.adresse_approx)),
-                         "t": "M" if r.type == "Maison" else "A", "s": int(r.surface), "v": int(r.valeur), "p": int(r.pm2), "f": int(r.nature != "Vente"), "src": "C" if r.source.startswith("DVF+") else "G"}}
+                         "t": "M" if r.type == "Maison" else "A", "s": int(r.surface), "v": int(r.valeur), "p": int(r.pm2), "f": int(r.nature != "Vente"), "src": "C" if r.source.startswith("DVF+") else ("D" if r.source == "DVF DGFiP" else "G")}}
          for r in g.itertuples()]
-meta = {"genere_le": pd.Timestamp.now().strftime("%d/%m/%Y"), "n": len(g), "annees": [int(g.annee.min()), int(g.annee.max())], "hist": stat_h,
+meta = {"date_max": g.date.max(), "genere_le": pd.Timestamp.now().strftime("%d/%m/%Y"), "n": len(g), "annees": [int(g.annee.min()), int(g.annee.max())], "hist": stat_h,
         "par_source": g.source.value_counts().to_dict(), "approx": int(g.adresse_approx.sum()),
         "cles": {"d": "date", "y": "année", "z": "zone (bac, ouest, frange, bc)", "c": "commune", "a": "adresse", "ax": "adresse approchée (géocodage inverse)", "t": "M maison / A appartement",
-                 "s": "surface bâtie m²", "v": "prix €", "p": "€/m²", "f": "VEFA (neuf)", "src": "G geo-dvf / C DVF+ Cerema"}}
+                 "s": "surface bâtie m²", "v": "prix €", "p": "€/m²", "f": "VEFA (neuf)", "src": "G geo-dvf / C DVF+ Cerema / D DVF DGFiP brute (2026 S1)"}}
 # contours des parcelles ayant au moins une vente (cliquables au zoom fort), simplifiés
 pq = cad[cad.index.isin(set(g.parcelle.dropna()))].geometry.simplify(0.000004)
 parc = {i: json.loads(json.dumps(gm.__geo_interface__, default=list))["coordinates"] for i, gm in pq.items()}

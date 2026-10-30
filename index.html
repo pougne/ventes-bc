@@ -33,8 +33,8 @@ td{padding:3px;border-bottom:1px solid #eee}tr:hover td{background:#fff6d5;curso
 <div class="sub" id="meta"></div>
 <h2>Années</h2>
 <div class="row"><span id="ylab"></span></div>
-<input type="range" id="y0" min="2010" max="2025" value="2021"><input type="range" id="y1" min="2010" max="2025" value="2025">
-<div class="sub">2010 à 2013 : pas de données ouvertes (DV3F réservé aux acteurs publics). 2014 à 2020 : DVF+ Cerema ; 2021 à 2025 : geo-dvf.</div>
+<input type="range" id="y0" min="2010" max="2026" value="2021"><input type="range" id="y1" min="2010" max="2026" value="2026">
+<div class="sub">2010 à 2013 : pas de données ouvertes (DV3F réservé aux acteurs publics). 2014 à 2020 : DVF+ Cerema ; 2021 à 2025 : geo-dvf ; 2026 (ventes jusqu’au 30 juin) : DVF DGFiP brute.</div>
 <h2>Type</h2>
 <label><input type="checkbox" class="ft" value="M" checked> Maisons</label>
 <label><input type="checkbox" class="ft" value="A" checked> Appartements</label>
@@ -65,7 +65,7 @@ td{padding:3px;border-bottom:1px solid #eee}tr:hover td{background:#fff6d5;curso
 const V = window.VENTES, F = V.features, M = V.meta;
 const fmt = n => n == null ? "n.d." : Math.round(n).toLocaleString("fr-FR");
 const ZN = {bac: "Quartier Bac", ouest: "Ouest mairie BC", bc: "Reste de Bois-Colombes", frange: "BC nord / frange Agnettes"};
-document.getElementById("meta").innerHTML = `${fmt(M.n)} ventes, ${M.annees[0]} à ${M.annees[1]}, une maison ou un appartement par vente, doublons et prix aberrants retirés. Données DGFiP (DVF) via geo-dvf (Etalab) et DVF+ open-data (Cerema). Généré le ${M.genere_le}.`;
+document.getElementById("meta").innerHTML = `${fmt(M.n)} ventes, ${M.annees[0]} à ${M.annees[1]}, une maison ou un appartement par vente, doublons et prix aberrants retirés. Données DGFiP (DVF) via geo-dvf (Etalab), DVF+ open-data (Cerema) et fichier DVF brut 2026 S1${M.date_max ? ` (dernière vente : ${M.date_max.split("-").reverse().join("/")})` : ""}. Généré le ${M.genere_le}.`;
 const map = L.map("map", {preferCanvas: true}).setView([48.9155, 2.2735], 15);
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 19, attribution: "© OpenStreetMap"}).addTo(map);
 const ZS = {"Quartier Bac": "#4a148c", "Ouest mairie BC": "#1b5e20", "Frange Agnettes / BC nord": "#424242", "Reste de Bois-Colombes": "#000"};
@@ -82,7 +82,7 @@ const BYQ = {}, BYA = {};
 F.forEach((f, i) => { const p = f.properties; p.i = i; p.ll = [f.geometry.coordinates[1], f.geometry.coordinates[0]]; const q = p.q || ("pt" + i);
   p.q = q; (BYQ[q] = BYQ[q] || []).push(p); (BYA[p.a] = BYA[p.a] || new Set()).add(q); });
 Object.values(BYQ).forEach(a => a.sort((x, y) => x.d < y.d ? 1 : -1));
-let Y0 = 2021, Y1 = 2025;
+let Y0 = 2021, Y1 = 2026;
 const inW = p => p.y >= Y0 && p.y <= Y1;
 function popupParc(q, note) {
   const a = BYQ[q], last = a[0], lw = a.find(inW);
@@ -96,7 +96,7 @@ function popupParc(q, note) {
   const oth = [...new Set(adrs.flatMap(x => [...BYA[x]]))].filter(x => x !== q);
   if (oth.length) h += `<div style="margin-top:6px">Même adresse, autre(s) parcelle(s) :</div><table class="hist">` + oth.flatMap(o => BYQ[o]).sort((x, y) => x.d < y.d ? 1 : -1).slice(0, 15)
     .map(p => `<tr class="${inW(p) ? "in" : "out"}"><td>${dfr(p.d)}</td><td>${p.t}</td><td class="num">${p.s} m²</td><td class="num">${fmt(p.v)} €</td><td class="num">${fmt(p.p)} €/m²</td></tr>`).join("") + "</table>";
-  h += `<div class="approx" style="margin-top:4px">Source : ${[...new Set(a.map(p => p.src === "C" ? "DVF+ Cerema" : "geo-dvf"))].join(", ")} · en gras = dans la fenêtre ${Y0}–${Y1}</div>`;
+  h += `<div class="approx" style="margin-top:4px">Source : ${[...new Set(a.map(p => p.src === "C" ? "DVF+ Cerema" : p.src === "D" ? "DVF DGFiP" : "geo-dvf"))].join(", ")} · en gras = dans la fenêtre ${Y0}–${Y1}</div>`;
   return wrap(h);
 }
 const clu = L.markerClusterGroup({disableClusteringAtZoom: 16, chunkedLoading: true, maxClusterRadius: 45, spiderfyOnMaxZoom: false});
@@ -152,7 +152,7 @@ function table() {
 $("tab").addEventListener("click", e => { const tr = e.target.closest("tr[data-q]"); if (tr) { const q = tr.dataset.q; map.setView(BYQ[q][0].ll, 18); document.body.classList.remove("open"); setTimeout(() => L.popup(PO()).setLatLng(BYQ[q][0].ll).setContent(popupParc(q)).openOn(map), 350); } });
 document.querySelectorAll("th[data-k]").forEach(th => th.onclick = () => { const k = th.dataset.k; sortD = sortK === k ? -sortD : (k === "d" || k === "p" || k === "v" ? -1 : 1); sortK = k; table(); });
 $("csv").onclick = () => { const h = ["parcelle","date","annee","zone","adresse","adresse_approchee","type","surface_m2","prix_eur","eur_m2","vefa","lat","lon","source"];
-  const L2 = cur.map(p => { const ll = {lat: p.ll[0], lng: p.ll[1]}; return [p.q, p.d, p.y, ZN[p.z], `"${p.a.replace(/"/g, '""')}"`, p.ax, p.t === "M" ? "Maison" : "Appartement", p.s, p.v, p.p, p.f, ll.lat, ll.lng, p.src === "C" ? "DVF+ Cerema" : "geo-dvf"].join(","); });
+  const L2 = cur.map(p => { const ll = {lat: p.ll[0], lng: p.ll[1]}; return [p.q, p.d, p.y, ZN[p.z], `"${p.a.replace(/"/g, '""')}"`, p.ax, p.t === "M" ? "Maison" : "Appartement", p.s, p.v, p.p, p.f, ll.lat, ll.lng, p.src === "C" ? "DVF+ Cerema" : p.src === "D" ? "DVF DGFiP" : "geo-dvf"].join(","); });
   const b = new Blob(["\ufeff" + h.join(",") + "\n" + L2.join("\n")], {type: "text/csv"}); const a = document.createElement("a"); a.href = URL.createObjectURL(b); a.download = "ventes_filtrees.csv"; a.click(); };
 document.querySelectorAll("input").forEach(e => e.addEventListener(e.type === "range" || e.type === "number" ? "input" : "change", apply));
 $("tog").onclick = () => document.body.classList.toggle("open");

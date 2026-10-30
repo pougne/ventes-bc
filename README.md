@@ -10,11 +10,12 @@ Ouvrir le lien ci-dessus, sur ordinateur ou sur téléphone. Sur mobile, **☰ F
 
 ## Données
 
-Jeu nettoyé (une maison ou un appartement par vente, doublons et prix aberrants retirés), embarqué dans `ventes.js`. Bilan du 30/10/2026 : 11 642 ventes, 2014–2025 (`bilan.json`).
+Jeu nettoyé (une maison ou un appartement par vente, doublons et prix aberrants retirés), embarqué dans `ventes.js`. Bilan du 30/10/2026 : 12 080 ventes, 2014–2026 (`bilan.json`).
 
 Sources en **Licence Ouverte** :
 
 - **DVF** (DGFiP), via geo-dvf (Etalab), années 2021–2025
+- **DVF** DGFiP brut, 1er semestre 2026 (ventes jusqu’au 30 juin 2026)
 - **DVF+** open data (Cerema), années 2014–2020
 
 2010–2013 ne sont pas publiées en open data. Le fond de carte est © OpenStreetMap.

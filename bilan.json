@@ -1,9 +1,10 @@
 {
+ "date_max": "2026-06-30",
  "genere_le": "30/10/2026",
- "n": 11642,
+ "n": 12080,
  "annees": [
   2014,
-  2025
+  2026
  ],
  "hist": {
   "brut": 19761,
@@ -14,7 +15,8 @@
  },
  "par_source": {
   "DVF+ Cerema": 7220,
-  "geo-dvf": 4422
+  "geo-dvf": 4422,
+  "DVF DGFiP": 438
  },
  "approx": 1067,
  "cles": {
@@ -29,9 +31,9 @@
   "v": "prix €",
   "p": "€/m²",
   "f": "VEFA (neuf)",
-  "src": "G geo-dvf / C DVF+ Cerema",
+  "src": "G geo-dvf / C DVF+ Cerema / D DVF DGFiP brute (2026 S1)",
   "q": "id parcelle cadastrale"
  },
- "parcelles": 2282,
+ "parcelles": 2340,
  "sans_parcelle": 0
 }

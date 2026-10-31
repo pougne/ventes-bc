@@ -4,6 +4,7 @@
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#1f2a37">
 <link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Ventes BC">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.185.1/build/three.module.js","@photo-sphere-viewer/core":"https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/core@5.15.1/index.module.js","@photo-sphere-viewer/markers-plugin":"https://cdn.jsdelivr.net/npm/@photo-sphere-viewer/markers-plugin@5.15.1/index.module.js"}}</script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
@@ -208,6 +209,7 @@ function liens(q, ll, a) {
   L1.push(idd ? `<a target="_blank" rel="noopener" href="https://observatoire-dpe-audit.ademe.fr/afficher-dpe/${encodeURIComponent(idd.dpe_id)}">DPE ADEME ↗</a>`
               : `<a target="_blank" rel="noopener" href="https://observatoire-dpe-audit.ademe.fr/trouver-dpe">Chercher le DPE (ADEME) ↗</a>`);
   L1.push(`<a target="_blank" rel="noopener" href="https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${ll[0].toFixed(6)},${ll[1].toFixed(6)}">Street View ↗</a>`);
+  if (window.rue360) L1.push(`<a href="#" onclick="rue360(${ll[0].toFixed(6)},${ll[1].toFixed(6)});return false">👁 Vue rue 360° + ventes</a>`);
   return `<div class="pop-a">${L1.join("")}</div>`;
 }
 function popupParc(q, note) {
@@ -454,4 +456,5 @@ if ("serviceWorker" in navigator && (location.protocol === "https:" || location.
 </script>
 <script src="annonces.js"></script>
 <script src="annonces_calque.js"></script>
+<script src="rue360.js"></script>
 </body></html>

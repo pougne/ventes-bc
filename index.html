@@ -66,7 +66,7 @@ td{padding:3px;border-bottom:1px solid #eee}.num{text-align:right;white-space:no
 #bm{position:absolute;z-index:1000;left:10px;bottom:12px;display:flex;gap:4px;background:#fffc;backdrop-filter:blur(6px);border-radius:8px;padding:3px;box-shadow:0 1px 4px #0003}
 #bm button{border:0;background:transparent;padding:5px 8px;border-radius:6px;font:600 11px/1.2 system-ui,sans-serif;color:#444;cursor:pointer}
 #bm button.on{background:#1f2a37;color:#fff}
-@media(max-width:800px){#bm{bottom:calc(28vh + 56px);left:8px}}
+@media(max-width:800px){#bm{bottom:calc(var(--sh) + 8px);left:8px}body.r360 .leaflet-popup-content{max-height:calc(40vh - 120px);max-height:calc(40dvh - 120px)}}
 </style></head><body>
 <div id="side">
 <button id="sidex" type="button" aria-label="Fermer les filtres">×</button>
@@ -156,8 +156,9 @@ function col(p, t, g) { const [a, b] = (ECH[g] || ECH.base)[t]; return ramp((p -
 const colRel = r => ramp((r + .25) / .5); // -25 % et moins -> bleu, +25 % et plus -> rouge
 const sheetH = () => { const s = $("sheet"); return s ? s.offsetHeight : 60; };
 // options communes des popups : largeur adaptée au téléphone, recentrage en laissant la place aux boutons, au tiroir et à la barre Safari
-const PO = () => ({maxWidth: Math.min(360, window.innerWidth - 56), minWidth: Math.min(240, window.innerWidth - 56), autoPan: true, keepInView: true,
-  autoPanPaddingTopLeft: [12, window.innerWidth <= 800 ? 64 : 64], autoPanPaddingBottomRight: [12, (window.innerWidth <= 800 ? sheetH() : 30) + 12]});
+const PO = () => { const r = document.getElementById("r360"), mob = window.innerWidth <= 800; // panneau 360° ouvert : on lui laisse sa place
+  return {maxWidth: Math.min(360, window.innerWidth - 56), minWidth: Math.min(240, window.innerWidth - 56), autoPan: true, keepInView: true,
+  autoPanPaddingTopLeft: [12, 64], autoPanPaddingBottomRight: [(r && !mob ? r.offsetWidth : 0) + 12, (r && mob ? r.offsetHeight : mob ? sheetH() : 30) + 12]}; };
 const wrap = h => h + `<div class="pop-f"><button class="pop-x" onclick="map.closePopup()">× Fermer</button></div>`;
 const dfr = d => d.split("-").reverse().join("/");
 const DA = Object.assign({}, V.dpeA || {});
@@ -239,13 +240,16 @@ const parcL = L.layerGroup(), PL = {};
 function ajouterParcelles(obj) { for (const [q, g] of Object.entries(obj)) {
   if (!BYQ[q] || PL[q]) continue;
   PL[q] = L.geoJSON({type: g.t, coordinates: g.c}, {style: {color: "#6b7280", weight: .7, fillColor: "#999", fillOpacity: .04}, bubblingMouseEvents: false})
-    .on("click", e => { L.DomEvent.stopPropagation(e); openParc(q, e.latlng); }).addTo(parcL);
+    .on("click", e => { L.DomEvent.stopPropagation(e); if (Date.now() - popFerme < 120) return; openParc(q, e.latlng); }).addTo(parcL); // tap qui vient de fermer un popup : pas de réouverture
 } }
 ajouterParcelles(V.parcelles || {});
 const syncParc = () => map.getZoom() >= 17 ? parcL.addTo(map) : map.removeLayer(parcL);
 map.on("zoomend", syncParc);
 // clic ailleurs : parcelle vendue la plus proche (et fermeture du panneau filtres sur mobile)
+let popFerme = 0, popOuvert = null; // tap à côté d'un popup : Leaflet le ferme puis émet le click, qu'on ignore
+map.on("popupopen", e => { popOuvert = e.popup; }); map.on("popupclose", e => { if (popOuvert === e.popup) popOuvert = null; popFerme = Date.now(); });
 map.on("click", e => { if (document.body.classList.contains("open")) { document.body.classList.remove("open"); return; }
+  if (Date.now() - popFerme < 120) return;
   let best = null, bd = 1e9;
   for (const q in BYQ) { const d = map.distance(e.latlng, BYQ[q][0].ll); if (d < bd) { bd = d; best = q; } }
   const c = bd <= 40 ? popupParc(best, `Parcelle vendue la plus proche, à ${Math.round(bd)} m du clic`) : wrap(`<div class="pop-t">Aucune vente connue depuis 2014 dans un rayon de 40 m (parcelle la plus proche à ${Math.round(bd)} m).</div>`);
@@ -455,7 +459,8 @@ async function tuiles() { try { const r = await fetch("tuiles/index.json", {cach
 // ---- démarrage
 $("tog").onclick = () => document.body.classList.toggle("open");
 $("sidex").onclick = () => document.body.classList.remove("open");
-document.addEventListener("keydown", e => { if (e.key === "Escape") document.body.classList.remove("open"); });
+document.addEventListener("keydown", e => { if (e.key !== "Escape") return; // un seul gestionnaire : popup, puis vue 360°, puis panneau filtres
+  if (popOuvert) map.closePopup(); else if (document.getElementById("r360") && window.rue360Fermer) window.rue360Fermer(); else document.body.classList.remove("open"); });
 const b0 = readHash();
 let apT; const applyD = () => { clearTimeout(apT); apT = setTimeout(apply, P.length > 30000 ? 180 : 0); }; // curseurs : on attend la fin du geste quand beaucoup de communes sont chargées
 document.querySelectorAll("#side input").forEach(e => e.type === "range" || e.type === "number" ? e.addEventListener("input", applyD) : e.addEventListener("change", apply));

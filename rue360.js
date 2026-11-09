@@ -33,12 +33,12 @@ async function autour(ll, m) { const dy = m / 111000, dx = m / (111000 * Math.co
 function ouvrirPanneau() { if (el) return;
   el = document.createElement("div"); el.id = "r360";
   el.innerHTML = `<div class="rh"><button data-a="b" title="Reculer">◀</button><button data-a="f" title="Avancer dans la direction regardée">Avancer ▶</button><div class="rt">Vue rue 360°…</div><button data-a="x" aria-label="Fermer la vue rue">✕</button></div><div class="rv"></div>`;
-  $("mw").appendChild(el);
-  el.querySelector(".rh").onclick = e => { const a = e.target.closest("button")?.dataset.a; if (a === "x") fermer(); else if (a === "f") bouger(0); else if (a === "b") bouger(180); };
-  document.addEventListener("keydown", esc); }
-const esc = e => { if (e.key === "Escape" && el) fermer(); };
+  $("mw").appendChild(el); document.body.classList.add("r360");
+  el.querySelector(".rh").onclick = e => { const a = e.target.closest("button")?.dataset.a; if (a === "x") fermer(); else if (a === "f") bouger(0); else if (a === "b") bouger(180); }; }
+// Escape : géré par index.html (popup, puis vue 360°, puis filtres), via window.rue360Fermer
 function fermer() { cancelAnimationFrame(raf); try { V?.destroy(); } catch (e) {} V = null; MKP = null; el?.remove(); el = null; cur = null; cand = [];
-  if (coneM) { map.removeLayer(coneM); coneM = null; } document.removeEventListener("keydown", esc); }
+  if (coneM) { map.removeLayer(coneM); coneM = null; } document.body.classList.remove("r360"); }
+window.rue360Fermer = fermer;
 const yawDe = b => rad(n360(b - cur.az)); // cap monde -> yaw de la photo (centre de l'image = view:azimuth)
 const capVu = () => V && cur ? n360(deg(V.getPosition().yaw) + cur.az) : 0;
 function cone() { if (!cur) return; const h = capVu();

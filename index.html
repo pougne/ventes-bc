@@ -188,11 +188,16 @@ function qt(a, q) { if (!a.length) return null; a = a.slice().sort((x, y) => x -
 // ---- indice annuel pour les « € d'aujourd'hui » : médiane €/m² par type et par an ; par zone si au moins 30 ventes chaque année, sinon tout le périmètre
 // GI par groupe (jeu de base BC / chaque tuile commune) pour ne pas mélanger les niveaux de prix
 let GI = {}, ZI = {};
+// seuil NMIN ventes par an et par groupe (sinon repli sur l'indice tous types du groupe) ; p.ix = 0 si aucun indice fiable (prix laissé en nominal, signalé dans la fiche)
 function indices() { const b = {}; GI = {}; ZI = {};
-  for (const p of P) for (const k of [`*${p.g}|${p.t}|${p.y}`, `${p.z}|${p.t}|${p.y}`]) (b[k] = b[k] || []).push(p.p);
-  for (const g of new Set(P.map(p => p.g))) { GI[g] = {M: {}, A: {}}; for (const t of "MA") for (let y = YA; y <= YR; y++) GI[g][t][y] = med(b[`*${g}|${t}|${y}`] || []); }
+  for (const p of P) for (const k of [`*${p.g}|${p.t}|${p.y}`, `*${p.g}|*|${p.y}`, `${p.z}|${p.t}|${p.y}`]) (b[k] = b[k] || []).push(p.p);
+  const mN = a => a && a.length >= NMIN ? med(a) : null;
+  for (const g of new Set(P.map(p => p.g))) { GI[g] = {M: {}, A: {}, "*": {}}; for (const t of "MA*") for (let y = YA; y <= YR; y++) GI[g][t][y] = mN(b[`*${g}|${t}|${y}`]); }
   for (const z in ZN) for (const t of "MA") { let okz = true; const s = {}; for (let y = YA; y <= YR; y++) { const a = b[`${z}|${t}|${y}`] || []; if (a.length < 30) okz = false; s[y] = med(a); } if (okz) ZI[`${z}|${t}`] = s; }
-  for (const p of P) { const s = ZI[`${p.z}|${p.t}`] || GI[p.g][p.t], k = s[YR] && s[p.y] ? s[YR] / s[p.y] : 1; p.pa = Math.round(p.p * k); p.va = Math.round(p.v * k / 1000) * 1000; }
+  for (const p of P) { let k = 1; p.ix = 1;
+    for (const s of [ZI[`${p.z}|${p.t}`], GI[p.g][p.t], GI[p.g]["*"]]) if (s && s[YR] && s[p.y]) { k = s[YR] / s[p.y]; break; }
+    if (k === 1 && p.y !== YR) p.ix = 0;
+    p.pa = Math.round(p.p * k); p.va = Math.round(p.v * k / 1000) * 1000; }
 }
 indices();
 let Y0 = 2021, Y1 = 2026, EUR = false, CM = "rel";
@@ -220,7 +225,7 @@ function popupParc(q, note) {
   h += `<span class="approx">Parcelle ${q.startsWith("pt") ? "inconnue" : q.slice(5, 8) === "000" ? q.slice(8, 10).replace(/^0/, "") + " " + +q.slice(10) : q} · ${ZN[last.z]} · position approximative (parcelle)</span></div>`;
   const ref = lw || last, r = relR(ref);
   h += `<div style="margin-top:4px">${lw ? "Dernière vente dans la fenêtre" : `<span class="badge">Aucune vente ${Y0}–${Y1}</span> dernière vente connue`} :<br><b>${dfr(ref.d)} · ${ref.t === "M" ? "Maison" : "Appartement"}${ref.f ? " (VEFA)" : ""} · ${ref.s} m² · ${fmt(ref.v)} € · ${fmt(ref.p)} €/m²</b></div>`;
-  h += `<div class="pop-k">${ref.y < YR ? `≈ <b>${fmt(ref.pa)} €/m²</b> en € ${YR} (≈ ${fmt(ref.va)} €)` : `Vente ${YR}`}${r != null ? ` · <b>${pct(r)}</b> vs médiane ${ref.t === "M" ? "maisons" : "apparts"} de la zone (${Y0}–${Y1})` : ""}</div>` + dpeLigne(ref);
+  h += `<div class="pop-k">${ref.y < YR ? (ref.ix === 0 ? `<span class="approx">Indice € ${YR} indisponible (trop peu de ventes par an ici)</span>` : `≈ <b>${fmt(ref.pa)} €/m²</b> en € ${YR} (≈ ${fmt(ref.va)} €)`) : `Vente ${YR}`}${r != null ? ` · <b>${pct(r)}</b> vs médiane ${ref.t === "M" ? "maisons" : "apparts"} de la zone (${Y0}–${Y1})` : ""}</div>` + dpeLigne(ref);
   h += `<div style="margin-top:6px">Historique complet de la parcelle (${a.length} vente${a.length > 1 ? "s" : ""}, depuis 2014) :</div><table class="hist">` +
     a.map(p => `<tr class="${inW(p) ? "in" : "out"}"><td>${dfr(p.d)}</td><td>${p.t}${p.f ? "·neuf" : ""}</td><td class="num">${p.s} m²</td><td class="num">${fmt(p.v)} €</td><td class="num">${fmt(p.p)} €/m²</td>${EUR ? `<td class="num approx">≈${fmt(p.pa)}</td>` : ""}<td>${pas(p.dpe, 1, p.dpe_ax)}</td>${adrs.length > 1 ? `<td class="approx">${p.a.replace(/ 92\d{3}.*/, "")}</td>` : ""}</tr>`).join("") + "</table>";
   h += dpeAdr(adrs);
@@ -357,7 +362,7 @@ function refreshView() {
   LIST = src.slice().sort((a, b) => { const x = key(a), y = key(b); return (x > y ? 1 : x < y ? -1 : 0) * SDIR; });
   $("list").innerHTML = LIST.slice(0, 300).map((p, i) => { const r = relR(p);
     return `<div class="it" data-i="${i}"><i style="background:${$("cdpe").checked ? (DCOL[DE(p)] || "#bbb") : CM === "rel" && r != null ? colRel(r) : col(val(p), p.t, p.g)}"></i>
-      <div><b>${fmt(val(p))} €/m²</b>${EUR ? ` <span class="approx">(${fmt(p.p)} nominal)</span>` : p.y < YR ? ` <span class="approx">≈${fmt(p.pa)} en € ${YR}</span>` : ""} ${pas(p.dpe, 1, p.dpe_ax)}</div>
+      <div><b>${fmt(val(p))} €/m²</b>${EUR ? ` <span class="approx">(${fmt(p.p)} nominal)</span>` : p.y < YR && p.ix !== 0 ? ` <span class="approx">≈${fmt(p.pa)} en € ${YR}</span>` : ""} ${pas(p.dpe, 1, p.dpe_ax)}</div>
       <div class="r">${fmt(p.v)} €</div>
       <div class="s">${dfr(p.d)} · ${p.t === "M" ? "Maison" : "Appart"} ${p.s} m² · ${p.a.replace(/ 92\d{3}.*/, "")}</div>
       <div class="r approx">${p._x < 1000 ? Math.round(p._x) + " m" : (p._x / 1000).toFixed(1).replace(".", ",") + " km"}${r != null ? ` · ${pct(r)}` : ""}</div></div>`; }).join("") || `<div class="sub" style="padding:12px">Aucune vente ici avec ces filtres.</div>`;

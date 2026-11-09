@@ -327,7 +327,7 @@ function fiche(Z, T) {
   }).join("");
 }
 // ---- zone visible, mode balade, tiroir liste
-const BAL = {on: false, r: 250, circle: null, lock: false}; // lock : le rayon reste en place quand la carte bouge par programme (tap dans la liste)
+const BAL = {on: false, r: 250, circle: null, lock: false, watch: false, last: null}; // watch : un seul suivi GPS actif ; last : dernier recalcul en balade [latlng, heure] // lock : le rayon reste en place quand la carte bouge par programme (tap dans la liste)
 let me = null, locAsk = false, firstFix = false, SORT = "d", SDIR = -1, LIST = [];
 const origin = () => BAL.on && BAL.circle ? BAL.circle.getLatLng() : me ? me.getLatLng() : map.getCenter();
 function refreshView() {
@@ -342,6 +342,7 @@ function refreshView() {
     sum = `<b>Rayon ${BAL.r} m</b> · <b>${src.length}</b> ventes ${Y0}–${Y1} <span class="approx">${me ? "autour de ma position" : BAL.lock ? "rayon figé (glisse la carte pour le déplacer)" : "autour du centre de la carte"}</span><br>Maisons ${mStr(bm)} <span class="approx">(${bm.length})</span> · apparts ${mStr(ba)} <span class="approx">(${ba.length})</span> €/m²${eurL()}${rg ? `<br><span class="approx">Fourchette</span> ${rg}` : ""}`;
   } else sum = `<b>${src.length}</b> ventes ${Y0}–${Y1} dans la zone visible${src.length > 300 ? " (300 affichées)" : ""} · tape pour ${$("sheet").classList.contains("col") ? "ouvrir" : "agrandir ou replier"} la liste`;
   $("sum").innerHTML = sum;
+  if ($("sheet").classList.contains("col")) { LIST = []; setSh(); return; } // tiroir replié : ni tri ni réécriture de la liste (sheet() la refait à l'ouverture)
   for (const p of src) p._x = map.distance(o, p.ll);
   const key = SORT === "p" ? val : SORT === "x" ? (p => p._x) : SORT === "dpe" ? (p => DE(p) || "Z") : (p => p.d);
   LIST = src.slice().sort((a, b) => { const x = key(a), y = key(b); return (x > y ? 1 : x < y ? -1 : 0) * SDIR; });
@@ -367,8 +368,9 @@ $("rad").addEventListener("click", e => { const b = e.target.closest("button"); 
 function balade(on) {
   BAL.on = on; $("bal").classList.toggle("on", on); document.body.classList.toggle("bal", on);
   if (on) { BAL.circle = BAL.circle || L.circle(origin(), {radius: BAL.r, color: "#2c6fa8", weight: 2, fillColor: "#2c6fa8", fillOpacity: .07, interactive: false});
-    BAL.circle.setLatLng(me ? me.getLatLng() : map.getCenter()).setRadius(BAL.r).addTo(map); locAsk = false; map.locate({watch: true, enableHighAccuracy: true, setView: false}); }
-  else { if (BAL.circle) map.removeLayer(BAL.circle); map.stopLocate(); }
+    BAL.circle.setLatLng(me ? me.getLatLng() : map.getCenter()).setRadius(BAL.r).addTo(map); locAsk = false;
+    if (!BAL.watch) { map.stopLocate(); map.locate({watch: true, enableHighAccuracy: true, setView: false}); BAL.watch = true; } }
+  else { if (BAL.circle) map.removeLayer(BAL.circle); map.stopLocate(); BAL.watch = false; BAL.last = null; }
   refreshView(); writeHash();
 }
 $("bal").onclick = () => balade(!BAL.on);
@@ -376,10 +378,18 @@ map.on("move", () => { if (BAL.on && !me && !BAL.lock && BAL.circle) BAL.circle.
 map.on("dragstart", () => { BAL.lock = false; });
 let mvT; map.on("moveend", () => { clearTimeout(mvT); mvT = setTimeout(() => { refreshView(); writeHash(); }, 120); });
 // ---- géolocalisation
-$("loc").onclick = () => { locAsk = true; map.locate({setView: true, maxZoom: 18, enableHighAccuracy: true, watch: BAL.on}); };
+// ◎ : si le suivi de la balade tourne déjà, on recentre seulement (pas de second watchPosition, la carte reste libre ensuite)
+let locCentre = false;
+$("loc").onclick = () => { locAsk = true;
+  if (BAL.watch) { if (me) map.setView(me.getLatLng(), Math.max(map.getZoom(), 17)); else { locCentre = true; toast("Recherche de ma position…"); } return; }
+  map.locate({setView: true, maxZoom: 18, enableHighAccuracy: true, watch: false}); };
 map.on("locationfound", e => { if (me) me.setLatLng(e.latlng); else me = L.circleMarker(e.latlng, {radius: 8, color: "#fff", weight: 3, fillColor: "#1e88e5", fillOpacity: 1, interactive: false}).addTo(map);
-  if (BAL.on && BAL.circle) { BAL.circle.setLatLng(e.latlng); if (!firstFix) map.setView(e.latlng, Math.max(map.getZoom(), 16)); firstFix = true; refreshView(); } });
-map.on("locationerror", e => { if (locAsk) alert("Position indisponible : " + e.message + " (la géolocalisation exige https ou localhost sur la plupart des navigateurs).");
+  if (locCentre) { locCentre = false; map.setView(e.latlng, Math.max(map.getZoom(), 17)); }
+  if (BAL.on && BAL.circle) { BAL.circle.setLatLng(e.latlng); if (!firstFix) map.setView(e.latlng, Math.max(map.getZoom(), 16)); firstFix = true;
+    // balade sobre : recalcul seulement après 8 m de déplacement (au plus une fois par 1,5 s), ou toutes les 10 s à l'arrêt
+    const t = Date.now(), l = BAL.last, dt = l ? t - l[1] : 1e9, dd = l ? l[0].distanceTo(e.latlng) : 1e9;
+    if ((dd >= 8 && dt >= 1500) || dt >= 10000) { BAL.last = [e.latlng, t]; refreshView(); } } });
+map.on("locationerror", e => { if (locAsk) toast("Position indisponible : " + e.message);
   else if (BAL.on) toast("Position indisponible : rayon autour du centre de la carte"); locAsk = false; });
 function toast(t) { const el = $("toast"); el.textContent = t; el.classList.add("v"); clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove("v"), 2200); }
 // ---- CSV (fenêtre complète, ou liste du tiroir : rayon / zone visible)

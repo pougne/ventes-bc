@@ -236,15 +236,20 @@ const plain = L.layerGroup(); let heat = null;
 const mk = []; // un marqueur par parcelle, reconstruit à chaque filtrage
 const openParc = (q, ll, note) => L.popup(PO()).setLatLng(ll || BYQ[q][0].ll).setContent(popupParc(q, note)).openOn(map);
 // parcelles vendues : cliquables et teintées par €/m² au zoom fort
-const parcL = L.layerGroup(), PL = {};
-function ajouterParcelles(obj) { for (const [q, g] of Object.entries(obj)) {
-  if (!BYQ[q] || PL[q]) continue;
-  PL[q] = L.geoJSON({type: g.t, coordinates: g.c}, {style: {color: "#6b7280", weight: .7, fillColor: "#999", fillOpacity: .04}, bubblingMouseEvents: false})
-    .on("click", e => { L.DomEvent.stopPropagation(e); if (Date.now() - popFerme < 120) return; openParc(q, e.latlng); }).addTo(parcL); // tap qui vient de fermer un popup : pas de réouverture
-} }
+// parcelles à la demande : géométries gardées brutes (PG), couche Leaflet créée seulement pour les parcelles à l'écran au zoom 17+
+const parcL = L.layerGroup(), PL = {}, PG = {}; let RQ = {};
+const styleParc = q => { const x = RQ[q]; return x ? {fillColor: x[0], fillOpacity: x[1] ? .22 : .5, color: "#fff", weight: .8} : {fillColor: "#999", fillOpacity: .04, color: "#9ca3af", weight: .6}; };
+function ajouterParcelles(obj) { for (const [q, g] of Object.entries(obj)) if (BYQ[q] && !PG[q]) PG[q] = g; if (map.getZoom() >= 17) majParc(); }
+function majParc() { const b = map.getBounds().pad(.3);
+  for (const q in PG) { const vu = b.contains(BYQ[q][0].ll);
+    if (vu) { if (!PL[q]) { const g = PG[q];
+        PL[q] = L.geoJSON({type: g.t, coordinates: g.c}, {style: styleParc(q), bubblingMouseEvents: false})
+          .on("click", e => { L.DomEvent.stopPropagation(e); if (Date.now() - popFerme < 120) return; openParc(q, e.latlng); }); } // tap qui vient de fermer un popup : pas de réouverture
+      if (!parcL.hasLayer(PL[q])) parcL.addLayer(PL[q]); }
+    else if (PL[q] && parcL.hasLayer(PL[q])) parcL.removeLayer(PL[q]); } }
 ajouterParcelles(V.parcelles || {});
-const syncParc = () => map.getZoom() >= 17 ? parcL.addTo(map) : map.removeLayer(parcL);
-map.on("zoomend", syncParc);
+const syncParc = () => { if (map.getZoom() >= 17) { majParc(); parcL.addTo(map); } else map.removeLayer(parcL); };
+map.on("zoomend", syncParc); map.on("moveend", () => { if (map.getZoom() >= 17) majParc(); });
 // clic ailleurs : parcelle vendue la plus proche (et fermeture du panneau filtres sur mobile)
 let popFerme = 0, popOuvert = null; // tap à côté d'un popup : Leaflet le ferme puis émet le click, qu'on ignore
 map.on("popupopen", e => { popOuvert = e.popup; }); map.on("popupclose", e => { if (popOuvert === e.popup) popOuvert = null; popFerme = Date.now(); });
@@ -281,14 +286,14 @@ function apply() {
   for (const k in bz) if (bz[k].length >= NMIN) MZ[k] = med(bz[k]);
   for (const k in bt) if (bt[k].length >= NMIN) MT[k] = med(bt[k]);
   const colOf = ref => { if (cd) return DCOL[dE(ref)] || "#bbb"; if (CM === "rel") { const r = relR(ref); if (r != null) return colRel(r); } return col(val(ref), ref.t, ref.g); };
-  mk.length = 0; const RQ = {};
+  mk.length = 0; RQ = {};
   for (const [q, ref, old] of R) {
     const c = colOf(ref); RQ[q] = [c, old];
     const o = old ? {radius: ref.t === "M" ? 7 : 5, color: "#777", weight: 2, dashArray: "3 3", fillColor: c, fillOpacity: .35, bubblingMouseEvents: false}
                   : {radius: ref.t === "M" ? 7 : 5, color: ref.t === "M" ? "#1f2a37" : "#fff", weight: ref.t === "M" ? 2 : 1, fillColor: c, fillOpacity: .92, bubblingMouseEvents: false};
     const m = L.circleMarker(ref.ll, o).bindPopup(() => popupParc(q), PO()); m.q = q; m.p = ref; mk.push(m);
   }
-  for (const q in PL) { const x = RQ[q]; PL[q].setStyle(x ? {fillColor: x[0], fillOpacity: x[1] ? .22 : .5, color: "#fff", weight: .8} : {fillColor: "#999", fillOpacity: .04, color: "#9ca3af", weight: .6}); }
+  for (const q in PL) PL[q].setStyle(styleParc(q));
   clu.clearLayers(); plain.clearLayers(); const tgt = $("clu").checked ? clu : plain;
   map.removeLayer(clu); map.removeLayer(plain); tgt.addLayers ? tgt.addLayers(mk) : mk.forEach(m => tgt.addLayer(m)); tgt.addTo(map);
   if (heat) { map.removeLayer(heat); heat = null; }
@@ -444,10 +449,12 @@ function zonePill(T) { ZN[T.z] = T.nom; TU.z[T.insee] = T.z; if (T.couleur) ZTC[
 async function chargerTuile(t) { if (TU.ok[t.insee] || TU.enCours[t.insee]) return; TU.enCours[t.insee] = true; toast(`Chargement des ventes ${t.court}…`);
   try { const r = await fetch(`${t.url}?v=${t.v}`); if (!r.ok) throw new Error(r.status); const T = await r.json(), x = decoder(T);
     zonePill(T); L.geoJSON(T.contour, {interactive: false, style: {color: ZTC[T.z] || "#b45309", weight: 2.5, opacity: .85, fill: false, dashArray: "8 5"}}).addTo(map);
-    ajouter(x.props); Object.assign(DA, x.da); indices(); ajouterParcelles(x.parc); TU.ok[t.insee] = T.meta;
+    ajouter(x.props); Object.assign(DA, x.da); ajouterParcelles(x.parc); TU.ok[t.insee] = T.meta; TU.sale = true;
     $("tst").textContent = Object.entries(TU.ok).map(([k, m]) => `${TU.reg.tuiles.find(u => u.insee === k).court} ${fmt(m.n)} ventes`).join(", ");
-    apply(); toast(`${t.court} : ${fmt(T.meta.n)} ventes chargées`);
-  } catch (e) { toast(`${t.court} : chargement impossible (${e.message})`); } finally { TU.enCours[t.insee] = false; } }
+    toast(`${t.court} : ${fmt(T.meta.n)} ventes chargées`);
+  } catch (e) { toast(`${t.court} : chargement impossible (${e.message})`); } finally { TU.enCours[t.insee] = false; }
+  // un seul recalcul (indices + marqueurs) quand la dernière commune de la file est arrivée
+  if (TU.sale && !Object.values(TU.enCours).some(Boolean)) { TU.sale = false; indices(); apply(); } }
 function tuilesVisibles() { if (!TU.reg || map.getZoom() < 14) return; const b = map.getBounds(), zo = map.getZoom(); // seulement si la commune est à l’écran (zoom 14+, Paris 15+ car dense), pas de préchargement
   for (const t of TU.reg.tuiles) if (!TU.ok[t.insee] && zo >= (t.zmin || (t.insee.startsWith("751") ? 15 : 14)) && b.intersects(L.latLngBounds([t.bbox[1], t.bbox[0]], [t.bbox[3], t.bbox[2]])) && touche(t, b)) chargerTuile(t); }
 // la commune (contour simplifié du registre) est-elle vraiment à l'écran ? sommet dans l'écran ou point de l'écran (grille 6×6) dans le contour
@@ -462,7 +469,7 @@ $("sidex").onclick = () => document.body.classList.remove("open");
 document.addEventListener("keydown", e => { if (e.key !== "Escape") return; // un seul gestionnaire : popup, puis vue 360°, puis panneau filtres
   if (popOuvert) map.closePopup(); else if (document.getElementById("r360") && window.rue360Fermer) window.rue360Fermer(); else document.body.classList.remove("open"); });
 const b0 = readHash();
-let apT; const applyD = () => { clearTimeout(apT); apT = setTimeout(apply, P.length > 30000 ? 180 : 0); }; // curseurs : on attend la fin du geste quand beaucoup de communes sont chargées
+let apT; const applyD = () => { clearTimeout(apT); apT = setTimeout(apply, 120); }; // curseurs et champs : on attend la fin du geste
 document.querySelectorAll("#side input").forEach(e => e.type === "range" || e.type === "number" ? e.addEventListener("input", applyD) : e.addEventListener("change", apply));
 hashOn = true; apply(); syncParc(); tuiles();
 if (b0) { BAL.r = [100, 250, 500].includes(b0) ? b0 : 250; $("rad").querySelectorAll("button").forEach(x => x.classList.toggle("on", +x.dataset.r === BAL.r)); balade(true); }

@@ -38,7 +38,7 @@ td{padding:3px;border-bottom:1px solid #eee}.num{text-align:right;white-space:no
 #bar>*{pointer-events:auto}.fab{height:44px;min-width:44px;padding:0 12px;border:0;border-radius:22px;background:#fff;box-shadow:0 1px 5px #0003;font-weight:600;font-size:15px;white-space:nowrap}
 .fab.on{background:var(--acc);color:#fff}.fab:hover{background:#f3f4f6}.fab.on:hover{background:#245d8d}
 #chip{flex:1;min-width:0;display:flex;justify-content:center}#chip>div{background:#fffffff2;box-shadow:0 1px 5px #0003;border-radius:16px;padding:5px 12px;font-size:12.5px;line-height:1.3;max-width:440px;text-align:center}
-#chip b{font-size:13.5px}#tog{display:none}
+#chip b{font-size:13.5px}#chip .v{display:block;color:var(--ink)}#chip i{font-style:normal;color:var(--mut);font-size:11px}#chip .fb b{color:var(--mut)}#tog{display:none}
 #sidex{display:none}
 /* tiroir liste (bas de l'écran sur mobile, panneau flottant sur ordinateur) */
 #sheet{position:absolute;z-index:1050;left:0;right:0;bottom:0;background:#fff;border-radius:16px 16px 0 0;box-shadow:0 -2px 14px #0003;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}
@@ -54,7 +54,8 @@ td{padding:3px;border-bottom:1px solid #eee}.num{text-align:right;white-space:no
 @media(max-width:800px){#side{position:absolute;z-index:1100;left:0;top:0;bottom:0;width:88vw;max-width:420px;transform:translateX(-100%);transition:transform .2s;box-shadow:2px 0 12px #0004}
  body.open #side{transform:none}#tog{display:block}.fab span{display:none}.fab{padding:0 10px}
  #sidex{display:block;position:sticky;top:0;float:right;margin:-4px -6px 0 8px;width:44px;height:44px;border-radius:50%;font:28px/40px system-ui,sans-serif;padding:0;background:#fff;box-shadow:0 1px 4px #0004;z-index:5}
- .leaflet-bottom{bottom:var(--sh)}.leaflet-control-zoom{display:none}#chip>div{font-size:11.5px;padding:4px 9px}#chip b{font-size:12.5px}}
+ .leaflet-bottom{bottom:var(--sh)}.leaflet-control-zoom{display:none}#bar{gap:6px}#chip>div{font-size:11px;line-height:1.25;padding:5px 10px 6px;color:var(--mut)}#chip .v{font-size:11.5px;white-space:nowrap}#chip b{font-size:15px}#chip i{display:none}}
+@media(max-width:370px){#chip b{font-size:13.5px}#chip .v{font-size:11px}}
 /* pastilles de filtres */
 .pills{display:flex;flex-wrap:wrap;gap:6px}.pill{display:inline-flex;align-items:center;gap:6px;margin:0;padding:6px 11px;border:1px solid #d1d5db;border-radius:18px;background:#fff;font-size:13px;user-select:none;min-height:34px}
 .pill input{position:absolute;opacity:0;pointer-events:none;width:0;height:0}.pill.on{background:var(--ink);border-color:var(--ink);color:#fff}.pill .sw{width:11px;height:11px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #9ca3af}
@@ -349,7 +350,8 @@ const origin = () => BAL.on && BAL.circle ? BAL.circle.getLatLng() : me ? me.get
 function refreshView() {
   const bnd = map.getBounds(), o = origin(), vis = cur.filter(p => bnd.contains(p.ll));
   const vm = vis.filter(p => p.t === "M").map(val), va = vis.filter(p => p.t === "A").map(val);
-  $("chip").innerHTML = `<div>Ici, ${Y0}–${Y1}${EUR ? ` (€ ${YR})` : ""} · maisons ${mStr(vm)} <span class="approx">(${vm.length})</span> · apparts ${mStr(va)} <span class="approx">(${va.length})</span> €/m²</div>`;
+  const cv = (a, lib) => `<span${a.length < 30 ? ' class="fb" title="Peu de ventes : médiane fragile"' : ""}>${lib} ${mStr(a)} <i>(${fmt(a.length)})</i></span>`; // chip en deux lignes voulues (revue graphisme 11/11/2026), effectif faible grisé
+  $("chip").innerHTML = `<div>Ici, ${Y0}–${Y1}${EUR ? ` (€ ${YR})` : ""} · €/m²<span class="v">${cv(vm, "maisons")} · ${cv(va, "apparts")}</span></div>`;
   let src = vis, sum;
   if (BAL.on) {
     src = cur.filter(p => map.distance(o, p.ll) <= BAL.r);

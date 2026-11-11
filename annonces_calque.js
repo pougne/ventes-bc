@@ -4,10 +4,13 @@
 (function () {
   const A = window.ANNONCES; if (!A || typeof map === "undefined") return;
   const css = document.createElement("style");
-  css.textContent = `.ann{background:none;border:0}.ann span{position:absolute;left:0;bottom:0;transform:translate(-50%,0);white-space:nowrap;font:700 11px/1 system-ui,-apple-system,sans-serif;padding:4px 6px;border-radius:4px;box-shadow:0 1px 3px #0006}
-.ann span:after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-5px;border:5px solid transparent;border-bottom:0;border-top-color:inherit}
-.ann.c span{background:#0d47a1;color:#fff;border:2px solid #0d47a1}.ann.p span{background:#fff;color:#0d47a1;border:2px dashed #0d47a1}.ann.l span{filter:hue-rotate(90deg)}
-.ann-leg b.c,.ann-leg b.p{display:inline-block;font-size:10.5px;padding:1px 4px;border-radius:3px;margin-right:3px}.ann-leg b.c{background:#0d47a1;color:#fff;border:2px solid #0d47a1}.ann-leg b.p{color:#0d47a1;border:2px dashed #0d47a1;background:#fff}
+  css.textContent = `:root{--ann:#0d47a1;--ann-l:#6a1b9a;--drop:#c62828}
+.ann{background:none;border:0}.ann.l{--ann:var(--ann-l)}
+.ann span{position:absolute;left:0;bottom:0;transform:translate(-50%,0);white-space:nowrap;font:700 12px/1 system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;padding:4px 7px;border-radius:6px;border:1.5px solid var(--ann);box-shadow:0 0 0 2px #fffc,0 2px 5px #0005}
+.ann span:after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-5px;border:5px solid transparent;border-bottom:0;border-top-color:var(--ann)}
+.ann span:before{content:"";position:absolute;inset:-9px -6px -13px}
+.ann.c span{background:var(--ann);color:#fff}.ann.p span{background:#fff;color:var(--ann)}
+.ann-leg b.c,.ann-leg b.p{display:inline-block;font-size:10.5px;padding:1px 4px;border-radius:5px;margin-right:3px;border:1.5px solid var(--ann)}.ann-leg b.c{background:var(--ann);color:#fff}.ann-leg b.p{color:var(--ann);background:#fff}
 .ann span i{font-style:normal;margin-left:3px;padding:0 3px;border-radius:3px;background:#c62828;color:#fff}
 .ann-pop details{margin-top:3px}.ann-pop summary{cursor:pointer}.ann-leg i{font-style:normal;padding:0 3px;border-radius:3px;background:#c62828;color:#fff}
 .ann-pop .warn{margin-top:6px;padding:4px 6px;background:#e8f0fe;border-radius:6px;font-size:11.5px}`;
@@ -47,7 +50,7 @@
   const grp = L.layerGroup();
   for (const a of A.features) {
     const ic = L.divIcon({className: `ann ${a.niv === "C" ? "c" : "p"}${a.typ === "L" ? " l" : ""}`, html: `<span>${a.typ === "L" ? fmt(a.prix) + " €/m" : k(a.prix)}${a.bp || a.bs ? "<i>↘</i>" : ""}</span>`, iconSize: [0, 0], iconAnchor: [0, 6], popupAnchor: [0, -22]});
-    L.marker([a.lat, a.lon], {icon: ic, zIndexOffset: a.niv === "C" ? 1000 : 500, title: String(a.titre || ""), keyboard: false}).bindPopup(() => pop(a), PO()).addTo(grp);
+    L.marker([a.lat, a.lon], {icon: ic, zIndexOffset: (a.niv === "C" ? 1000 : 500) + (a.bp || a.bs ? 200 : 0), title: String(a.titre || ""), keyboard: false}).bindPopup(() => pop(a), PO()).addTo(grp);
   }
   // bloc dans le panneau, juste avant « Liste »
   const box = document.createElement("div");

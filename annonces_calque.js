@@ -14,10 +14,21 @@
 .ann span i,.ann-leg i,.ann-pop .dr{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;font:0/0 a;color:transparent;vertical-align:-3px;box-shadow:0 0 0 1.5px #fff;background:var(--drop) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5 5l6 6M11 6.5V11H6.5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat}
 .ann span i{position:absolute;top:-8px;right:-8px}
 .ann span i.s,.ann-leg i.s,.ann-pop .dr.s{box-shadow:0 0 0 1.5px var(--drop),0 0 0 3px #fff;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5 5l6 6M11 6.5V11H6.5' fill='none' stroke='%23c62828' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat}
-.ann-pop details{margin-top:3px}.ann-pop summary{cursor:pointer}
-.ann-pop .warn{margin-top:6px;padding:4px 6px;background:#e8f0fe;border-radius:6px;font-size:11.5px}`;
+.ann-pop{font-variant-numeric:tabular-nums}.ann-pop .approx{color:#5b6472;font-size:11.5px}.ann-pop .nw{white-space:nowrap}
+.ann-pop .px{margin-top:4px;line-height:1.35}.ann-pop .px>b:first-child{font-size:16px}
+.ann-pop .bx{display:flex;gap:8px;align-items:center;margin-top:6px;padding:6px 8px;border-radius:8px;background:#fdecea;color:#8e1b1b;font-size:12.5px;line-height:1.3}
+.ann-pop .bx b{font-size:14.5px;white-space:nowrap}.ann-pop .bx.s{background:#f3f4f6;color:#4b5563}
+.ann-pop details{margin-top:2px}
+.ann-pop summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;padding:8px 0;font-size:12px;color:#5b6472}
+.ann-pop summary::-webkit-details-marker{display:none}
+.ann-pop summary:before{content:"›";width:10px;font-size:15px;line-height:1;transition:transform .15s}
+.ann-pop details[open] summary:before{transform:rotate(90deg)}
+.ann-pop .hp{display:grid;grid-template-columns:max-content max-content 1fr;gap:3px 12px;margin:0 0 6px 16px;font-size:12px;color:#4b5563}
+.ann-pop .hp b{text-align:right;font-weight:500}.ann-pop .hp b:nth-last-child(2){font-weight:700;color:var(--ink)}.ann-pop .hp em{font-style:normal;color:#8e1b1b}.ann-pop .hp em.up{color:#4b5563}
+.ann-pop .lv{margin-top:4px}
+.ann-pop .warn{margin-top:6px;font-size:11.5px;color:#5b6472}`;
   document.head.appendChild(css);
-  const NIV = {C: "Adresse confirmée", P: "Position probable (parcelle cadastre de cette surface dans la zone de l’annonce, non vérifiée sur place ; adresse non publiée)"};
+  const NIV = {C: "Adresse confirmée", P: "parcelle de cette surface dans la zone de l’annonce, non vérifiée sur place, adresse non publiée"};
   const k = v => v >= 1e6 ? (v / 1e6).toFixed(2).replace(/0$/, "").replace(".", ",") + " M€" : Math.round(v / 1000) + " k€";
   const dfr = d => d.split("-").reverse().join("/");
   const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
@@ -31,22 +42,28 @@
     const v = pres.filter(p => p.t === a.t && p.y >= y0).map(p => p.p).sort((x, y) => x - y);
     if (v.length < 5) return `<div class="approx">Ventes DVF ${a.t === "M" ? "maisons" : "appartements"} à moins de 300 m (${y0}–${ymax}) : ${v.length}, trop peu pour une médiane.</div>`;
     const m = v.length >> 1, med = v.length % 2 ? v[m] : (v[m - 1] + v[m]) / 2, e = a.pm2 ? Math.round((a.pm2 / med - 1) * 100) : null;
-    return `<div style="margin-top:4px">Repère DVF ${a.t === "M" ? "maisons" : "appartements"} à moins de 300 m (${y0}–${ymax}) : médiane <b>${fmt(med)} €/m²</b> <span class="approx">(${v.length} ventes)</span>${e != null ? ` · annonce <b>${e > 0 ? "+" : ""}${e} %</b>` : ""}</div>`;
+    return `<div style="margin-top:4px">Repère DVF ${a.t === "M" ? "maisons" : "appartements"} à moins de 300 m (${y0}–${ymax}) : médiane <b>${fmt(med)} €/m²</b> <span class="approx">(${v.length} ventes)</span>${e != null ? ` · annonce <b class="nw">${e > 0 ? "+" : e < 0 ? "−" : ""}${Math.abs(e)} %</b>` : ""}</div>`;
   }
   function pop(a) {
     const loc = a.typ === "L";
-    let h = `<div class="pop-t ann-pop"><span class="badge" style="background:#e8f0fe;border-color:#0d47a1">Annonce en ligne</span> <b>${esc(a.titre)}</b><br>`;
-    h += `<div style="margin-top:4px"><b>${fmt(a.prix)} €${loc ? " CC / mois" : ""}</b> demandés${a.m2 ? ` · ${fmt(a.m2)} m²` : ""}${a.pm2 ? ` · <b>${loc ? String(a.pm2).replace(".", ",") : fmt(a.pm2)} €/m²${loc ? "/mois" : ""}</b>` : ""}${a.ter ? ` · terrain ${fmt(a.ter)} m²` : ""}${a.dpe ? ` · DPE ${a.dpe}` : ""}</div>`;
-    // baisse de prix (toutes, même sous 5 %) et historique compact, pliable (11/11/2026)
-    if (a.bp) h += `<div style="margin-top:4px;color:#c62828"><b>↘ −${Math.abs(a.bp)} %</b> depuis le ${dfr(a.hp[0][0])} (${fmt(a.hp[0][1])} € → ${fmt(a.prix)} €)</div>`;
-    else if (a.bs) h += `<div style="margin-top:4px;color:#c62828"><b>↘</b> Baisse signalée par Bien’ici avant notre suivi (montant inconnu)</div>`;
-    if (a.hp && a.hp.length > 1) h += `<details${a.hp.length > 2 ? "" : " open"}><summary class="approx">Historique du prix (${a.hp.length} relevés)</summary><div class="approx">${a.hp.map(e => dfr(e[0]).slice(0, 5) + " : " + fmt(e[1]) + " €").join(" → ")}</div></details>`;
-    h += `<div style="margin-top:4px">${a.niv === "C" ? "✅" : "≈"} <b>${a.niv === "C" ? "Confirmée" : "Probable"}</b> : <span class="approx">${NIV[a.niv]}</span></div>`;
+    let h = `<div class="ann-pop"><div class="pop-t"><span class="badge" style="background:#e8f0fe;border-color:#0d47a1">Annonce · prix demandé</span> <b>${esc(a.titre)}</b></div>`;
+    h += `<div class="px"><b class="nw">${fmt(a.prix)} €${loc ? " CC / mois" : ""}</b> demandés${a.m2 ? ` · <span class="nw">${fmt(a.m2)} m²</span>` : ""}${a.pm2 ? ` · <b class="nw">${loc ? String(a.pm2).replace(".", ",") : fmt(a.pm2)} €/m²${loc ? "/mois" : ""}</b>` : ""}${a.ter ? ` · <span class="nw">terrain ${fmt(a.ter)} m²</span>` : ""}${a.dpe ? ` · <span class="nw">DPE ${a.dpe}</span>` : ""}</div>`;
+    // baisse de prix (toutes, même sous 5 %) : plein = chiffrée, creux = signalée ; historique en grille, toujours replié (revue graphisme 11/11/2026)
+    const an = a.hp && a.hp.length > 1 && a.hp[0][0].slice(0, 4) !== a.hp[a.hp.length - 1][0].slice(0, 4); // année affichée si l'historique chevauche janvier
+    const dc = d => an ? dfr(d) : dfr(d).slice(0, 5);
+    if (a.bp && a.hp && a.hp.length) h += `<div class="bx"><i class="dr">↘</i><b>−${Math.abs(a.bp)} %</b><span>${fmt(a.hp[0][1])} € → <span class="nw">${fmt(a.prix)} €</span> · <span class="nw">premier relevé le ${dc(a.hp[0][0])}</span></span></div>`;
+    else if (a.bp) h += `<div class="bx"><i class="dr">↘</i><b>−${Math.abs(a.bp)} %</b></div>`;
+    else if (a.bs) h += `<div class="bx s"><i class="dr s">↘</i><span>Baisse signalée par Bien’ici avant notre suivi, montant inconnu</span></div>`;
+    if (a.hp && a.hp.length > 1) h += `<details><summary>Historique du prix (${a.hp.length} relevés)</summary><div class="hp">${a.hp.map((e, i) => {
+      const d = i ? Math.round((e[1] / a.hp[i - 1][1] - 1) * 1000) / 10 : 0;
+      return `<span>${dc(e[0])}</span><b>${fmt(e[1])} €</b><em${d > 0 ? ' class="up"' : ""}>${d ? (d < 0 ? "−" : "+") + String(Math.abs(d)).replace(".", ",") + " %" : ""}</em>`;
+    }).join("")}</div></details>`;
+    h += `<div class="lv">${a.niv === "C" ? "✅" : "≈"} <b>${a.niv === "C" ? "Confirmée" : "Probable"}</b> : <span class="approx">${NIV[a.niv]}</span></div>`;
     if (a.niv === "C" && a.adr) h += `<div>${esc(a.adr)}</div>`; // adresse déduite (probable) jamais affichée
     if (a.niv === "C" && a.parc) h += `<div class="approx">Parcelle ${esc(a.parc)}${a.pid ? ` (${esc(String(a.pid).slice(0, 5))})` : ""}</div>`;
     h += dvfAutour(a);
     if (urlSure(a.url)) h += `<div style="margin-top:6px"><a href="${esc(a.url)}" target="_blank" rel="noopener">Voir l’annonce${a.src ? " (" + esc(a.src) + ")" : ""} ↗</a>${a.dep ? ` <span class="approx">en ligne depuis le ${dfr(a.dep)}</span>` : ""}</div>`;
-    h += `<div class="warn">Prix <b>demandé</b> dans une annonce, <b>pas une vente DVF</b> (pas sur l’échelle de couleur €/m² des ventes).</div></div>`;
+    h += `<div class="warn">Prix <b>demandé</b>, pas une vente DVF (hors échelle de couleur).</div></div>`;
     return wrap(h);
   }
   const grp = L.layerGroup();

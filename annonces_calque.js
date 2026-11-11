@@ -1,6 +1,6 @@
 // Calque « annonces en cours » (localisation sûre seulement) — données : annonces.js (construire_annonces.py)
 // Dépend des globales de index.html : map, PO, wrap, fmt, P (toutes les ventes DVF chargées : base + communes). Indépendant des filtres DVF.
-// Adresse, parcelle et identifiant affichés seulement si la position est confirmée (niv C) ; textes tiers échappés.
+// Adresse et parcelle affichées en niv C (confirmée) et, depuis le 11/11/2026 (choix d'Eric), en niv P avec l'étiquette « Adresse probable (non confirmée) » ; textes tiers échappés.
 (function () {
   const A = window.ANNONCES; if (!A || typeof map === "undefined") return;
   const css = document.createElement("style");
@@ -9,8 +9,11 @@
 .ann span{position:absolute;left:0;bottom:0;transform:translate(-50%,0);white-space:nowrap;font:700 12px/1 system-ui,-apple-system,sans-serif;font-variant-numeric:tabular-nums;padding:4px 7px;border-radius:6px;border:1.5px solid var(--ann);box-shadow:0 0 0 2px #fffc,0 2px 5px #0005}
 .ann span:after{content:"";position:absolute;left:50%;bottom:-6px;margin-left:-5px;border:5px solid transparent;border-bottom:0;border-top-color:var(--ann)}
 .ann span:before{content:"";position:absolute;inset:-9px -6px -13px}
-.ann.c span{background:var(--ann);color:#fff}.ann.p span{background:#fff;color:var(--ann)}
-.ann-leg b.c,.ann-leg b.p{display:inline-block;font-size:10.5px;padding:1px 4px;border-radius:5px;margin-right:3px;border:1.5px solid var(--ann)}.ann-leg b.c{background:var(--ann);color:#fff}.ann-leg b.p{color:var(--ann);background:#fff}
+.ann.c span{background:var(--ann);color:#fff}.ann.p span{background:#fff;color:var(--ann);border-style:dashed}
+.ann span .q,.ann-leg .q{display:inline-block;width:15px;height:15px;border-radius:50%;background:#f59e0b;color:#1f2a37;font:800 10.5px/15px system-ui,sans-serif;text-align:center;box-shadow:0 0 0 1.5px #fff}
+.ann span .q{position:absolute;top:-8px;left:-8px}.ann-leg .q{margin:0 3px 0 -2px;vertical-align:1px}
+.ann-pop .ap{display:inline-block;margin-right:4px;padding:1px 6px;border-radius:9px;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;font-size:11px;font-weight:700;white-space:nowrap}
+.ann-leg b.c,.ann-leg b.p{display:inline-block;font-size:10.5px;padding:1px 4px;border-radius:5px;margin-right:3px;border:1.5px solid var(--ann)}.ann-leg b.c{background:var(--ann);color:#fff}.ann-leg b.p{color:var(--ann);background:#fff;border-style:dashed}
 .ann span i,.ann-leg i,.ann-pop .dr{display:inline-block;flex:none;width:16px;height:16px;border-radius:50%;font:0/0 a;color:transparent;vertical-align:-3px;box-shadow:0 0 0 1.5px #fff;background:var(--drop) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5 5l6 6M11 6.5V11H6.5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat}
 .ann span i{position:absolute;top:-8px;right:-8px}
 .ann span i.s,.ann-leg i.s,.ann-pop .dr.s{box-shadow:0 0 0 1.5px var(--drop),0 0 0 3px #fff;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5 5l6 6M11 6.5V11H6.5' fill='none' stroke='%23c62828' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat}
@@ -28,7 +31,7 @@
 .ann-pop .lv{margin-top:4px}
 .ann-pop .warn{margin-top:6px;font-size:11.5px;color:#5b6472}`;
   document.head.appendChild(css);
-  const NIV = {C: "Adresse confirmée", P: "parcelle de cette surface dans la zone de l’annonce, non vérifiée sur place, adresse non publiée"};
+  const NIV = {C: "Adresse confirmée", P: "position déduite (parcelle cadastre de cette surface dans la zone de l’annonce), non vérifiée sur place : l’adresse peut être fausse"};
   const k = v => v >= 1e6 ? (v / 1e6).toFixed(2).replace(/0$/, "").replace(".", ",") + " M€" : Math.round(v / 1000) + " k€";
   const dfr = d => d.split("-").reverse().join("/");
   const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
@@ -59,8 +62,10 @@
       return `<span>${dc(e[0])}</span><b>${fmt(e[1])} €</b><em${d > 0 ? ' class="up"' : ""}>${d ? (d < 0 ? "−" : "+") + String(Math.abs(d)).replace(".", ",") + " %" : ""}</em>`;
     }).join("")}</div></details>`;
     h += `<div class="lv">${a.niv === "C" ? "✅" : "≈"} <b>${a.niv === "C" ? "Confirmée" : "Probable"}</b> : <span class="approx">${NIV[a.niv]}</span></div>`;
-    if (a.niv === "C" && a.adr) h += `<div>${esc(a.adr)}</div>`; // adresse déduite (probable) jamais affichée
-    if (a.niv === "C" && a.parc) h += `<div class="approx">Parcelle ${esc(a.parc)}${a.pid ? ` (${esc(String(a.pid).slice(0, 5))})` : ""}</div>`;
+    const pb = a.niv !== "C"; // probable : adresse et parcelle publiées avec étiquette (choix d'Eric, 11/11/2026)
+    if (pb && a.ded) h += `<div class="approx">Adresse déduite par recoupement (cadastre, DPE, rue), non vérifiée.</div>`;
+    if (a.adr) h += `<div style="margin-top:3px">${pb ? `<span class="ap">Adresse probable</span>` : ""}${esc(a.adr)}${pb ? ` <span class="approx">(non confirmée)</span>` : ""}</div>`;
+    if (a.parc) h += `<div class="approx">Parcelle ${pb ? "probable " : ""}${esc(a.parc)}${a.pid ? ` (${esc(String(a.pid).slice(0, 5))})` : ""}</div>`;
     h += dvfAutour(a);
     if (urlSure(a.url)) h += `<div style="margin-top:6px"><a href="${esc(a.url)}" target="_blank" rel="noopener">Voir l’annonce${a.src ? " (" + esc(a.src) + ")" : ""} ↗</a>${a.dep ? ` <span class="approx">en ligne depuis le ${dfr(a.dep)}</span>` : ""}</div>`;
     h += `<div class="warn">Prix <b>demandé</b>, pas une vente DVF (hors échelle de couleur).</div></div>`;
@@ -68,14 +73,14 @@
   }
   const grp = L.layerGroup();
   for (const a of A.features) {
-    const ic = L.divIcon({className: `ann ${a.niv === "C" ? "c" : "p"}${a.typ === "L" ? " l" : ""}`, html: `<span>${a.typ === "L" ? fmt(a.prix) + " €/m" : k(a.prix)}${a.bp ? `<i data-p="−${Math.abs(a.bp)} %" title="Baisse de ${Math.abs(a.bp)} %">↘</i>` : a.bs ? `<i class="s" title="Baisse signalée, montant inconnu">↘</i>` : ""}</span>`, iconSize: [0, 0], iconAnchor: [0, 6], popupAnchor: [0, -22]});
+    const ic = L.divIcon({className: `ann ${a.niv === "C" ? "c" : "p"}${a.typ === "L" ? " l" : ""}`, html: `<span>${a.niv === "C" ? "" : `<b class="q" title="Adresse probable, non confirmée">?</b>`}${a.typ === "L" ? fmt(a.prix) + " €/m" : k(a.prix)}${a.bp ? `<i data-p="−${Math.abs(a.bp)} %" title="Baisse de ${Math.abs(a.bp)} %">↘</i>` : a.bs ? `<i class="s" title="Baisse signalée, montant inconnu">↘</i>` : ""}</span>`, iconSize: [0, 0], iconAnchor: [0, 6], popupAnchor: [0, -22]});
     L.marker([a.lat, a.lon], {icon: ic, zIndexOffset: (a.niv === "C" ? 1000 : 500) + (a.bp || a.bs ? 200 : 0), title: String(a.titre || ""), keyboard: false}).bindPopup(() => pop(a), PO()).addTo(grp);
   }
   // bloc dans le panneau, juste avant « Liste »
   const nBp = A.features.filter(a => a.bp).length, nBs = A.features.filter(a => !a.bp && a.bs).length;
   const box = document.createElement("div");
   box.innerHTML = `<h2>Annonces en cours</h2><label><input type="checkbox" id="annOn" checked> <b>Annonces en ligne (localisation sûre)</b></label>
-<div class="sub ann-leg"><b class="c">850 k€</b> adresse confirmée (${A.meta.confirmee}) · <b class="p">850 k€</b> parcelle probable (${A.meta.probable})${nBp ? ` · <i>↘</i> baisse chiffrée (${nBp})` : ""}${nBs ? ` · <i class="s">↘</i> baisse signalée, montant inconnu (${nBs})` : ""}. ${A.meta.exclues && A.meta.exclues.approximative ? `${A.meta.exclues.approximative} annonces à position approximative masquées. ` : ""}Prix demandés, pas des ventes DVF. Veille du ${A.meta.veille ? dfr(A.meta.veille) : "?"}.</div>`;
+<div class="sub ann-leg"><b class="c">850 k€</b> adresse confirmée (${A.meta.confirmee}) · <b class="p">850 k€</b><b class="q">?</b> adresse probable, non confirmée (${A.meta.probable}${A.meta.deduites ? `, dont ${A.meta.deduites} déduites par recoupement` : ""})${nBp ? ` · <i>↘</i> baisse chiffrée (${nBp})` : ""}${nBs ? ` · <i class="s">↘</i> baisse signalée, montant inconnu (${nBs})` : ""}. ${A.meta.exclues && A.meta.exclues.approximative ? `${A.meta.exclues.approximative} annonces à position approximative masquées. ` : ""}Prix demandés, pas des ventes DVF. Veille du ${A.meta.veille ? dfr(A.meta.veille) : "?"}.</div>`;
   const side = document.getElementById("side");
   const evol = [...side.querySelectorAll("h2")].find(h => /Évolution/i.test(h.textContent));
   if (evol) side.insertBefore(box, evol); else side.appendChild(box);

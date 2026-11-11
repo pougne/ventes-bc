@@ -3,7 +3,7 @@
 // Bibliothèques CDN : cache d'abord. Tuiles de carte : cache des tuiles déjà vues (plafonné).
 // Tuiles communes (tuiles/<insee>.json?v=…, URL versionnée) : cache d'abord, ancienne version purgée ; jamais préchargées (ni tout le 92 ni tout Paris).
 // Purge à l'activation limitée aux caches ventes-bc-* (d'autres pages de pougne.github.io partagent l'origine).
-const V = "ventes-bc-v5", TU = "ventes-bc-tuiles-v1", CO = "ventes-bc-communes-v1", MAXT = 400, DELAI = 3000;
+const V = "ventes-bc-v6", TU = "ventes-bc-tuiles-v1", CO = "ventes-bc-communes-v1", MAXT = 400, DELAI = 3000;
 const SHELL = ["./", "./index.html", "./ventes.js", "./annonces.js", "./annonces_calque.js", "./rue360.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png"];
 const CDN = ["https://unpkg.com/leaflet@1.9.4/dist/leaflet.css", "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js",
   "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css", "https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css",

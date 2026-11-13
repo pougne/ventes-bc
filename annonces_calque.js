@@ -53,7 +53,11 @@
   function pop(a) {
     const loc = a.typ === "L";
     let h = `<div class="ann-pop"><div class="pop-t"><span class="badge" style="background:#e8f0fe;border-color:#0d47a1">Annonce · prix demandé</span>${a.chx ? ` <span class="chx">moins de 4 chambres</span>` : ""} <b>${esc(a.titre)}</b></div>`;
-    h += `<div class="px"><b class="nw">${fmt(a.prix)} €${loc ? " CC / mois" : ""}</b> demandés${a.m2 ? ` · <span class="nw">${fmt(a.m2)} m²</span>` : ""}${a.pm2 ? ` · <b class="nw">${loc ? String(a.pm2).replace(".", ",") : fmt(a.pm2)} €/m²${loc ? "/mois" : ""}</b>` : ""}${a.ter ? ` · <span class="nw">terrain ${fmt(a.ter)} m²</span>` : ""}${a.dpe ? ` · <span class="nw">DPE ${a.dpe}</span>` : ""}</div>`;
+    h += `<div class="px"><b class="nw">${fmt(a.prix)} €${loc ? " CC / mois" : ""}</b> demandés${a.m2 ? ` · <span class="nw">${fmt(a.m2)} m²</span>` : ""}${a.pm2 ? ` · <b class="nw">${loc ? String(a.pm2).replace(".", ",") : fmt(a.pm2)} €/m²${loc ? "/mois" : ""}</b>` : ""}${a.ter ? ` · <span class="nw">terrain ${fmt(a.ter)} m²</span>` : ""}${a.dpe && !a.dpe_d ? ` · <span class="nw">DPE ${a.dpe}</span>` : ""}</div>`;
+    if (a.dpe_d) h += `<div class="pop-k">DPE : ${esc(a.dpe_d)}</div>`;
+    if (a.risq) h += `<div class="pop-k">Risques (Géorisques) : ${esc(a.risq)}</div>`;
+    if (a.bruit) h += `<div class="pop-k">Bruit (Bruitparif) : ${esc(a.bruit)}</div>`;
+    if (a.ags && a.ags.length) h += `<div class="pop-a">Autres agences : ${a.ags.map(e => `<a href="${esc(e.u)}" target="_blank" rel="noopener">${esc(e.a || "Annonce")}</a>`).join(" ")}</div>`;
     // baisse de prix (toutes, même sous 5 %) : plein = chiffrée, creux = signalée ; historique en grille, toujours replié (revue graphisme 11/11/2026)
     const an = a.hp && a.hp.length > 1 && a.hp[0][0].slice(0, 4) !== a.hp[a.hp.length - 1][0].slice(0, 4); // année affichée si l'historique chevauche janvier
     const dc = d => an ? dfr(d) : dfr(d).slice(0, 5);

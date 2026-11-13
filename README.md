@@ -3,7 +3,7 @@
 Carte statique (Leaflet) des ventes DVF 2014 à juin 2026, publiée sur GitHub Pages : https://pougne.github.io/ventes-bc/
 
 ## Fichiers
-- `index.html` : l’outil (tout le code client).
+- `index.html` : l’outil (tout le code client). Meta `noindex, nofollow` depuis le 13/11/2026 (carte tout visible, sans indexation) : la garder à chaque édition de la page.
 - `ventes.js` : données (`window.VENTES`), produit par `construire.py` (+ `dpe_joindre.py` pour le DPE ADEME).
 - `annonces.js` + `annonces_calque.js` : calque facultatif des annonces en cours (localisation confirmée ou probable seulement ; adresse probable affichée avec mention depuis le 11/11/2026), produit par `construire_annonces.py`. Depuis le 13/11/2026, les ventes déjà suivies qui ne passent pas le critère des 4 chambres (sauf 3 chambres et plus de 120 m²) portent le badge « moins de 4 chambres » (popup, pastille « 4− », légende) ; elles ne sont pas retirées.
 - `manifest.webmanifest`, `sw.js`, `icon-192.png`, `icon-512.png` : application installable (PWA) et hors ligne.
@@ -32,7 +32,7 @@ Carte statique (Leaflet) des ventes DVF 2014 à juin 2026, publiée sur GitHub P
 ## Hors ligne / écran d’accueil
 Sur iPhone : Safari → Partager → « Sur l’écran d’accueil ». Sur Android : Chrome → menu → « Installer l’application ».
 Le service worker (`sw.js`, actif en https uniquement) garde en cache la page, `ventes.js`, Leaflet et les tuiles déjà vues (400 max). Les fichiers communes (`tuiles/*.json`) ne sont pas préchargés : ils entrent en cache seulement après avoir été consultés.
-Page et données : réseau d’abord, mais cache au bout de 3 s sans réponse (la réponse réseau met ensuite le cache à jour). Tuiles communes versionnées (`?v=`) : cache d’abord, ancienne version purgée. À l’activation, seuls les caches `ventes-bc-*` périmés sont purgés (les autres pages de pougne.github.io ne sont pas touchées). Pour forcer une mise à jour du cache après un gros changement, incrémenter `V` dans `sw.js` (v8 depuis le 13/11/2026, badge « moins de 4 chambres » ; v7 le 11/11/2026, adresses probables).
+Page et données : réseau d’abord, mais cache au bout de 3 s sans réponse (la réponse réseau met ensuite le cache à jour). Tuiles communes versionnées (`?v=`) : cache d’abord, ancienne version purgée. À l’activation, seuls les caches `ventes-bc-*` périmés sont purgés (les autres pages de pougne.github.io ne sont pas touchées). Pour forcer une mise à jour du cache après un gros changement, incrémenter `V` dans `sw.js` (v9 depuis le 13/11/2026, meta noindex ; v8 le 13/11/2026, badge « moins de 4 chambres » ; v7 le 11/11/2026, adresses probables).
 
 ## Corrections du 9/11/2026 (revue Fable)
 - Balade : un seul suivi GPS, recalcul après 8 m de déplacement (ou toutes les 10 s), liste non réécrite tiroir replié ; ◎ en balade recentre sans relancer le GPS.

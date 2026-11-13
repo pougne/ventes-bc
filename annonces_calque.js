@@ -29,7 +29,10 @@
 .ann-pop .hp{display:grid;grid-template-columns:max-content max-content 1fr;gap:3px 12px;margin:0 0 6px 16px;font-size:12px;color:#4b5563}
 .ann-pop .hp b{text-align:right;font-weight:500}.ann-pop .hp b:nth-last-child(2){font-weight:700;color:var(--ink)}.ann-pop .hp em{font-style:normal;color:#8e1b1b}.ann-pop .hp em.up{color:#4b5563}
 .ann-pop .lv{margin-top:4px}
-.ann-pop .warn{margin-top:6px;font-size:11.5px;color:#5b6472}`;
+.ann-pop .warn{margin-top:6px;font-size:11.5px;color:#5b6472}
+.ann span .chx,.ann-leg .chx,.ann-pop .chx{display:inline-block;padding:1px 5px;border-radius:7px;background:#fef3c7;color:#92400e;border:1px solid #d97706;font:700 10px/1.3 system-ui,sans-serif;white-space:nowrap;vertical-align:1px}
+.ann span .chx{position:absolute;left:-8px;bottom:-11px;font-size:9px;padding:1px 4px;box-shadow:0 0 0 1.5px #fff}
+.ann-pop .chx{margin:0 4px 0 0;font-size:11px}`;
   document.head.appendChild(css);
   const NIV = {C: "Adresse confirmée", P: "position déduite (parcelle cadastre de cette surface dans la zone de l’annonce), non vérifiée sur place : l’adresse peut être fausse"};
   const k = v => v >= 1e6 ? (v / 1e6).toFixed(2).replace(/0$/, "").replace(".", ",") + " M€" : Math.round(v / 1000) + " k€";
@@ -49,7 +52,7 @@
   }
   function pop(a) {
     const loc = a.typ === "L";
-    let h = `<div class="ann-pop"><div class="pop-t"><span class="badge" style="background:#e8f0fe;border-color:#0d47a1">Annonce · prix demandé</span> <b>${esc(a.titre)}</b></div>`;
+    let h = `<div class="ann-pop"><div class="pop-t"><span class="badge" style="background:#e8f0fe;border-color:#0d47a1">Annonce · prix demandé</span>${a.chx ? ` <span class="chx">moins de 4 chambres</span>` : ""} <b>${esc(a.titre)}</b></div>`;
     h += `<div class="px"><b class="nw">${fmt(a.prix)} €${loc ? " CC / mois" : ""}</b> demandés${a.m2 ? ` · <span class="nw">${fmt(a.m2)} m²</span>` : ""}${a.pm2 ? ` · <b class="nw">${loc ? String(a.pm2).replace(".", ",") : fmt(a.pm2)} €/m²${loc ? "/mois" : ""}</b>` : ""}${a.ter ? ` · <span class="nw">terrain ${fmt(a.ter)} m²</span>` : ""}${a.dpe ? ` · <span class="nw">DPE ${a.dpe}</span>` : ""}</div>`;
     // baisse de prix (toutes, même sous 5 %) : plein = chiffrée, creux = signalée ; historique en grille, toujours replié (revue graphisme 11/11/2026)
     const an = a.hp && a.hp.length > 1 && a.hp[0][0].slice(0, 4) !== a.hp[a.hp.length - 1][0].slice(0, 4); // année affichée si l'historique chevauche janvier
@@ -73,14 +76,14 @@
   }
   const grp = L.layerGroup();
   for (const a of A.features) {
-    const ic = L.divIcon({className: `ann ${a.niv === "C" ? "c" : "p"}${a.typ === "L" ? " l" : ""}`, html: `<span>${a.niv === "C" ? "" : `<b class="q" title="Adresse probable, non confirmée">?</b>`}${a.typ === "L" ? fmt(a.prix) + " €/m" : k(a.prix)}${a.bp ? `<i data-p="−${Math.abs(a.bp)} %" title="Baisse de ${Math.abs(a.bp)} %">↘</i>` : a.bs ? `<i class="s" title="Baisse signalée, montant inconnu">↘</i>` : ""}</span>`, iconSize: [0, 0], iconAnchor: [0, 6], popupAnchor: [0, -22]});
-    L.marker([a.lat, a.lon], {icon: ic, zIndexOffset: (a.niv === "C" ? 1000 : 500) + (a.bp || a.bs ? 200 : 0), title: String(a.titre || ""), keyboard: false}).bindPopup(() => pop(a), PO()).addTo(grp);
+    const ic = L.divIcon({className: `ann ${a.niv === "C" ? "c" : "p"}${a.typ === "L" ? " l" : ""}`, html: `<span>${a.niv === "C" ? "" : `<b class="q" title="Adresse probable, non confirmée">?</b>`}${a.typ === "L" ? fmt(a.prix) + " €/m" : k(a.prix)}${a.chx ? `<b class="chx" title="moins de 4 chambres">4−</b>` : ""}${a.bp ? `<i data-p="−${Math.abs(a.bp)} %" title="Baisse de ${Math.abs(a.bp)} %">↘</i>` : a.bs ? `<i class="s" title="Baisse signalée, montant inconnu">↘</i>` : ""}</span>`, iconSize: [0, 0], iconAnchor: [0, 6], popupAnchor: [0, -22]});
+    L.marker([a.lat, a.lon], {icon: ic, zIndexOffset: (a.niv === "C" ? 1000 : 500) + (a.bp || a.bs ? 200 : 0) + (a.chx ? 50 : 0), title: String(a.titre || "") + (a.chx ? " · moins de 4 chambres" : ""), keyboard: false}).bindPopup(() => pop(a), PO()).addTo(grp);
   }
   // bloc dans le panneau, juste avant « Liste »
-  const nBp = A.features.filter(a => a.bp).length, nBs = A.features.filter(a => !a.bp && a.bs).length;
+  const nBp = A.features.filter(a => a.bp).length, nBs = A.features.filter(a => !a.bp && a.bs).length, nChx = A.features.filter(a => a.chx).length;
   const box = document.createElement("div");
   box.innerHTML = `<h2>Annonces en cours</h2><label><input type="checkbox" id="annOn" checked> <b>Annonces en ligne (localisation sûre)</b></label>
-<div class="sub ann-leg"><b class="c">850 k€</b> adresse confirmée (${A.meta.confirmee}) · <b class="p">850 k€</b><b class="q">?</b> adresse probable, non confirmée (${A.meta.probable}${A.meta.deduites ? `, dont ${A.meta.deduites} déduites par recoupement` : ""})${nBp ? ` · <i>↘</i> baisse chiffrée (${nBp})` : ""}${nBs ? ` · <i class="s">↘</i> baisse signalée, montant inconnu (${nBs})` : ""}. ${A.meta.exclues && A.meta.exclues.approximative ? `${A.meta.exclues.approximative} annonces à position approximative masquées. ` : ""}Prix demandés, pas des ventes DVF. Veille du ${A.meta.veille ? dfr(A.meta.veille) : "?"}.</div>`;
+<div class="sub ann-leg"><b class="c">850 k€</b> adresse confirmée (${A.meta.confirmee}) · <b class="p">850 k€</b><b class="q">?</b> adresse probable, non confirmée (${A.meta.probable}${A.meta.deduites ? `, dont ${A.meta.deduites} déduites par recoupement` : ""})${nBp ? ` · <i>↘</i> baisse chiffrée (${nBp})` : ""}${nBs ? ` · <i class="s">↘</i> baisse signalée, montant inconnu (${nBs})` : ""}${nChx ? ` · <b class="chx">4−</b> moins de 4 chambres (${nChx}), déjà suivies, non retirées` : ""}. ${A.meta.exclues && A.meta.exclues.approximative ? `${A.meta.exclues.approximative} annonces à position approximative masquées. ` : ""}Prix demandés, pas des ventes DVF. Veille du ${A.meta.veille ? dfr(A.meta.veille) : "?"}.</div>`;
   const side = document.getElementById("side");
   const evol = [...side.querySelectorAll("h2")].find(h => /Évolution/i.test(h.textContent));
   if (evol) side.insertBefore(box, evol); else side.appendChild(box);

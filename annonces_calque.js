@@ -32,7 +32,10 @@
 .ann-pop .warn{margin-top:6px;font-size:11.5px;color:#5b6472}
 .ann span .chx,.ann-leg .chx,.ann-pop .chx{display:inline-block;padding:1px 5px;border-radius:7px;background:#fef3c7;color:#92400e;border:1px solid #d97706;font:700 10px/1.3 system-ui,sans-serif;white-space:nowrap;vertical-align:1px}
 .ann span .chx{position:absolute;left:-8px;bottom:-11px;font-size:9px;padding:1px 4px;box-shadow:0 0 0 1.5px #fff}
-.ann-pop .chx{margin:0 4px 0 0;font-size:11px}`;
+.ann-pop .chx{margin:0 4px 0 0;font-size:11px}
+.ann.abs span{background:#eef0f3;color:#4b5563;border-color:#6b7280;border-style:dotted}
+.ann.abs.c span{background:#e5e7eb;color:#4b5563}
+.ann-pop .abs-note{margin-top:6px;padding:6px 8px;border-radius:8px;background:#f3f4f6;color:#374151;font-size:12.5px;line-height:1.35;border:1px dotted #9ca3af}`;
   document.head.appendChild(css);
   const NIV = {C: "Adresse confirmée", P: "position déduite (parcelle cadastre de cette surface dans la zone de l’annonce), non vérifiée sur place : l’adresse peut être fausse"};
   const k = v => v >= 1e6 ? (v / 1e6).toFixed(2).replace(/0$/, "").replace(".", ",") + " M€" : Math.round(v / 1000) + " k€";
@@ -53,6 +56,11 @@
   function pop(a) {
     const loc = a.typ === "L";
     let h = `<div class="ann-pop"><div class="pop-t"><span class="badge" style="background:#e8f0fe;border-color:#0d47a1">Annonce · prix demandé</span>${a.chx ? ` <span class="chx">moins de 4 chambres</span>` : ""} <b>${esc(a.titre)}</b></div>`;
+    if (String(a.statut || "").startsWith("absent")) {
+      const n = a.passages_absent || 1, seuil = (A.meta && A.meta.passages_avant_retraite) || 2;
+      const depuis = a.date_absence ? ` depuis le ${dfr(a.date_absence).slice(0, 5)}` : "";
+      h += `<div class="abs-note">Plus en ligne${depuis} (passage ${n}/${seuil})</div>`;
+    }
     h += `<div class="px"><b class="nw">${fmt(a.prix)} €${loc ? " CC / mois" : ""}</b> demandés${a.m2 ? ` · <span class="nw">${fmt(a.m2)} m²</span>` : ""}${a.pm2 ? ` · <b class="nw">${loc ? String(a.pm2).replace(".", ",") : fmt(a.pm2)} €/m²${loc ? "/mois" : ""}</b>` : ""}${a.ter ? ` · <span class="nw">terrain ${fmt(a.ter)} m²</span>` : ""}${a.dpe && !a.dpe_d ? ` · <span class="nw">DPE ${a.dpe}</span>` : ""}</div>`;
     if (a.dpe_d) h += `<div class="pop-k">DPE : ${esc(a.dpe_d)}</div>`;
     if (a.risq) h += `<div class="pop-k">Risques (Géorisques) : ${esc(a.risq)}</div>`;
@@ -80,14 +88,15 @@
   }
   const grp = L.layerGroup();
   for (const a of A.features) {
-    const ic = L.divIcon({className: `ann ${a.niv === "C" ? "c" : "p"}${a.typ === "L" ? " l" : ""}`, html: `<span>${a.niv === "C" ? "" : `<b class="q" title="Adresse probable, non confirmée">?</b>`}${a.typ === "L" ? fmt(a.prix) + " €/m" : k(a.prix)}${a.chx ? `<b class="chx" title="moins de 4 chambres">4−</b>` : ""}${a.bp ? `<i data-p="−${Math.abs(a.bp)} %" title="Baisse de ${Math.abs(a.bp)} %">↘</i>` : a.bs ? `<i class="s" title="Baisse signalée, montant inconnu">↘</i>` : ""}</span>`, iconSize: [0, 0], iconAnchor: [0, 6], popupAnchor: [0, -22]});
-    L.marker([a.lat, a.lon], {icon: ic, zIndexOffset: (a.niv === "C" ? 1000 : 500) + (a.bp || a.bs ? 200 : 0) + (a.chx ? 50 : 0), title: String(a.titre || "") + (a.chx ? " · moins de 4 chambres" : ""), keyboard: false}).bindPopup(() => pop(a), PO()).addTo(grp);
+    const abs = String(a.statut || "").startsWith("absent");
+    const ic = L.divIcon({className: `ann ${a.niv === "C" ? "c" : "p"}${a.typ === "L" ? " l" : ""}${abs ? " abs" : ""}`, html: `<span>${a.niv === "C" ? "" : `<b class="q" title="Adresse probable, non confirmée">?</b>`}${a.typ === "L" ? fmt(a.prix) + " €/m" : k(a.prix)}${a.chx ? `<b class="chx" title="moins de 4 chambres">4−</b>` : ""}${a.bp ? `<i data-p="−${Math.abs(a.bp)} %" title="Baisse de ${Math.abs(a.bp)} %">↘</i>` : a.bs ? `<i class="s" title="Baisse signalée, montant inconnu">↘</i>` : ""}</span>`, iconSize: [0, 0], iconAnchor: [0, 6], popupAnchor: [0, -22]});
+    L.marker([a.lat, a.lon], {icon: ic, zIndexOffset: (abs ? 200 : 0) + (a.niv === "C" ? 1000 : 500) + (a.bp || a.bs ? 200 : 0) + (a.chx ? 50 : 0), title: String(a.titre || "") + (a.chx ? " · moins de 4 chambres" : "") + (abs ? " · plus en ligne" : ""), keyboard: false}).bindPopup(() => pop(a), PO()).addTo(grp);
   }
   // bloc dans le panneau, juste avant « Liste »
-  const nBp = A.features.filter(a => a.bp).length, nBs = A.features.filter(a => !a.bp && a.bs).length, nChx = A.features.filter(a => a.chx).length;
+  const nBp = A.features.filter(a => a.bp).length, nBs = A.features.filter(a => !a.bp && a.bs).length, nChx = A.features.filter(a => a.chx).length, nAbs = A.features.filter(a => String(a.statut || "").startsWith("absent")).length;
   const box = document.createElement("div");
   box.innerHTML = `<h2>Annonces en cours</h2><label><input type="checkbox" id="annOn" checked> <b>Annonces en ligne (localisation sûre)</b></label>
-<div class="sub ann-leg"><b class="c">850 k€</b> adresse confirmée (${A.meta.confirmee}) · <b class="p">850 k€</b><b class="q">?</b> adresse probable, non confirmée (${A.meta.probable}${A.meta.deduites ? `, dont ${A.meta.deduites} déduites par recoupement` : ""})${nBp ? ` · <i>↘</i> baisse chiffrée (${nBp})` : ""}${nBs ? ` · <i class="s">↘</i> baisse signalée, montant inconnu (${nBs})` : ""}${nChx ? ` · <b class="chx">4−</b> moins de 4 chambres (${nChx}), déjà suivies, non retirées` : ""}. ${A.meta.exclues && A.meta.exclues.approximative ? `${A.meta.exclues.approximative} annonces à position approximative masquées. ` : ""}Prix demandés, pas des ventes DVF. Veille du ${A.meta.veille ? dfr(A.meta.veille) : "?"}.</div>`;
+<div class="sub ann-leg"><b class="c">850 k€</b> adresse confirmée (${A.meta.confirmee}) · <b class="p">850 k€</b><b class="q">?</b> adresse probable, non confirmée (${A.meta.probable}${A.meta.deduites ? `, dont ${A.meta.deduites} déduites par recoupement` : ""})${nBp ? ` · <i>↘</i> baisse chiffrée (${nBp})` : ""}${nBs ? ` · <i class="s">↘</i> baisse signalée, montant inconnu (${nBs})` : ""}${nChx ? ` · <b class="chx">4−</b> moins de 4 chambres (${nChx}), déjà suivies, non retirées` : ""}${nAbs ? ` · pastille grisée, contour pointillé : plus en ligne (${nAbs}), encore sur la carte (retrait au 2e passage)` : ""}. ${A.meta.exclues && A.meta.exclues.approximative ? `${A.meta.exclues.approximative} annonces à position approximative masquées. ` : ""}Prix demandés, pas des ventes DVF. Veille du ${A.meta.veille ? dfr(A.meta.veille) : "?"}.</div>`;
   const side = document.getElementById("side");
   const evol = [...side.querySelectorAll("h2")].find(h => /Évolution/i.test(h.textContent));
   if (evol) side.insertBefore(box, evol); else side.appendChild(box);

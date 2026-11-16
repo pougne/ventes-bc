@@ -82,7 +82,9 @@
     if (a.adr) h += `<div style="margin-top:3px">${pb ? `<span class="ap">Adresse probable</span>` : ""}${esc(a.adr)}${pb ? ` <span class="approx">(non confirmée)</span>` : ""}</div>`;
     if (a.parc) h += `<div class="approx">Parcelle ${pb ? "probable " : ""}${esc(a.parc)}${a.pid ? ` (${esc(String(a.pid).slice(0, 5))})` : ""}</div>`;
     h += dvfAutour(a);
-    if (urlSure(a.url)) h += `<div style="margin-top:6px"><a href="${esc(a.url)}" target="_blank" rel="noopener">Voir l’annonce${a.src ? " (" + esc(a.src) + ")" : ""} ↗</a>${a.dep ? ` <span class="approx">en ligne depuis le ${dfr(a.dep)}</span>` : ""}</div>`;
+    if (a.delai) h += `<div class="lv" style="margin-top:6px">${esc(a.delai)}</div>`;
+    else if (a.j != null) h += `<div class="lv" style="margin-top:6px">En ligne depuis ${a.j} jour${a.j > 1 ? "s" : ""}</div>`;
+    if (urlSure(a.url)) h += `<div style="margin-top:6px"><a href="${esc(a.url)}" target="_blank" rel="noopener">Voir l’annonce${a.src ? " (" + esc(a.src) + ")" : ""} ↗</a>${!a.delai && a.dep ? ` <span class="approx">en ligne depuis le ${dfr(a.dep)}</span>` : ""}</div>`;
     h += `<div class="warn">Prix <b>demandé</b>, pas une vente DVF (hors échelle de couleur).</div></div>`;
     return wrap(h);
   }
@@ -96,7 +98,7 @@
   const nBp = A.features.filter(a => a.bp).length, nBs = A.features.filter(a => !a.bp && a.bs).length, nChx = A.features.filter(a => a.chx).length, nAbs = A.features.filter(a => String(a.statut || "").startsWith("absent")).length;
   const box = document.createElement("div");
   box.innerHTML = `<h2>Annonces en cours</h2><label><input type="checkbox" id="annOn" checked> <b>Annonces en ligne (localisation sûre)</b></label>
-<div class="sub ann-leg"><b class="c">850 k€</b> adresse confirmée (${A.meta.confirmee}) · <b class="p">850 k€</b><b class="q">?</b> adresse probable, non confirmée (${A.meta.probable}${A.meta.deduites ? `, dont ${A.meta.deduites} déduites par recoupement` : ""})${nBp ? ` · <i>↘</i> baisse chiffrée (${nBp})` : ""}${nBs ? ` · <i class="s">↘</i> baisse signalée, montant inconnu (${nBs})` : ""}${nChx ? ` · <b class="chx">4−</b> moins de 4 chambres (${nChx}), déjà suivies, non retirées` : ""}${nAbs ? ` · pastille grisée, contour pointillé : plus en ligne (${nAbs}), encore sur la carte (retrait au 2e passage)` : ""}. ${A.meta.exclues && A.meta.exclues.approximative ? `${A.meta.exclues.approximative} annonces à position approximative masquées. ` : ""}Prix demandés, pas des ventes DVF. Veille du ${A.meta.veille ? dfr(A.meta.veille) : "?"}.</div>`;
+<div class="sub ann-leg"><b class="c">850 k€</b> adresse confirmée (${A.meta.confirmee}) · <b class="p">850 k€</b><b class="q">?</b> adresse probable, non confirmée (${A.meta.probable}${A.meta.deduites ? `, dont ${A.meta.deduites} déduites par recoupement` : ""})${nBp ? ` · <i>↘</i> baisse chiffrée (${nBp})` : ""}${nBs ? ` · <i class="s">↘</i> baisse signalée, montant inconnu (${nBs})` : ""}${nChx ? ` · <b class="chx">4−</b> moins de 4 chambres (${nChx}), déjà suivies, non retirées` : ""}${nAbs ? ` · pastille grisée, contour pointillé : plus en ligne (${nAbs}), encore sur la carte (retrait au 2e passage)` : ""}. ${A.meta.exclues && A.meta.exclues.approximative ? `${A.meta.exclues.approximative} annonces à position approximative masquées. ` : ""}Prix demandés, pas des ventes DVF. Durée en ligne comparée à la médiane de nos retraits (${(A.meta && A.meta.delai_avertissement) || "un retrait ne prouve pas une vente"}). Veille du ${A.meta.veille ? dfr(A.meta.veille) : "?"}.</div>`;
   const side = document.getElementById("side");
   const evol = [...side.querySelectorAll("h2")].find(h => /Évolution/i.test(h.textContent));
   if (evol) side.insertBefore(box, evol); else side.appendChild(box);
